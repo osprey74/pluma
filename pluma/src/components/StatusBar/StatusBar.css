@@ -1,0 +1,60 @@
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: #f3f3f3;
+  border-top: 1px solid #ddd;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .status-bar {
+    background-color: #252526;
+    border-top-color: #3c3c3c;
+    color: #cccccc;
+  }
+}
+
+.status-bar-left,
+.status-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-item {
+  white-space: nowrap;
+}
+
+.file-name {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-select {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0 2px;
+  outline: none;
+}
+
+.status-select:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .status-select:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
