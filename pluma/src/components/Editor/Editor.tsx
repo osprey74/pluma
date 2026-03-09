@@ -1,8 +1,8 @@
 import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useSyncExternalStore } from "react";
-import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, rectangularSelection, crosshairCursor } from "@codemirror/view";
+import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, rectangularSelection, crosshairCursor } from "@codemirror/view";
 import { EditorState, Extension, Compartment } from "@codemirror/state";
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
-import { search, searchKeymap } from "@codemirror/search";
+import { search, searchKeymap, openSearchPanel, selectNextOccurrence } from "@codemirror/search";
 import { markdown } from "@codemirror/lang-markdown";
 import { getThemeExtension } from "./extensions/theme";
 import { csvKeymap } from "./extensions/csvKeymap";
@@ -110,9 +110,42 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
         highlightActiveLineGutter(),
         history(),
         search({ top: false }),
+        EditorState.allowMultipleSelections.of(true),
+        drawSelection(),
         rectangularSelection(),
         crosshairCursor(),
-        keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
+        // Fix: When Alt+clicking inside existing selected text, CodeMirror
+        // sets dragging=null which doesn't preventDefault on mousedown.
+        // The browser then initiates a native text drag, stealing mousemove
+        // events and breaking multi-line rectangular selection.
+        // Clearing the selection before CodeMirror processes mousedown
+        // ensures isInPrimarySelection returns false → dragging=false →
+        // mousedown is prevented → no native drag interference.
+        EditorView.domEventHandlers({
+          mousedown(e, view) {
+            if (e.altKey && e.button === 0) {
+              const pos = view.posAtCoords({ x: e.clientX, y: e.clientY });
+              if (pos !== null && !view.state.selection.main.empty) {
+                view.dispatch({ selection: { anchor: pos } });
+              }
+            }
+            return false;
+          },
+          dragstart(e) {
+            if (e.altKey) {
+              e.preventDefault();
+              return true;
+            }
+            return false;
+          },
+        }),
+        keymap.of([
+          ...defaultKeymap,
+          ...historyKeymap,
+          ...searchKeymap,
+          { key: "Mod-h", run: openSearchPanel },
+          { key: "Mod-d", run: selectNextOccurrence },
+        ]),
         getThemeExtension(isDark),
         rulerCompRef.current.of(rulerExtension(wrapColumn)),
         whitespaceExtension(),

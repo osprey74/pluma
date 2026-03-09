@@ -9,6 +9,12 @@ const lightTheme = EditorView.theme({
   ".cm-content": {
     caretColor: "#000",
   },
+  "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
+    background: "#3390ff44",
+  },
+  "& .cm-selectionBackground": {
+    background: "#3390ff30",
+  },
   ".cm-gutters": {
     backgroundColor: "#f5f5f5",
     borderRight: "1px solid #ddd",
@@ -18,7 +24,7 @@ const lightTheme = EditorView.theme({
     backgroundColor: "#e8e8e8",
   },
   ".cm-activeLine": {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#0000000a",
   },
 });
 
@@ -26,6 +32,12 @@ const darkThemeOverrides = EditorView.theme(
   {
     "&": {
       height: "100%",
+    },
+    "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
+      background: "#3390ff44",
+    },
+    "& .cm-selectionBackground": {
+      background: "#3390ff30",
     },
   },
   { dark: true },

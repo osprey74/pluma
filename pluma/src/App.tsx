@@ -7,6 +7,7 @@ import MenuBar from "./components/MenuBar/MenuBar";
 import StatusBar from "./components/StatusBar/StatusBar";
 import SettingsDialog from "./components/SettingsDialog/SettingsDialog";
 import ConfirmSaveDialog from "./components/ConfirmSaveDialog/ConfirmSaveDialog";
+import HelpDialog from "./components/HelpDialog/HelpDialog";
 import { useFileIO, getRecentFiles } from "./hooks/useFileIO";
 import { useEditorStore } from "./stores/editorStore";
 import type { WrapMode } from "./stores/editorStore";
@@ -31,6 +32,7 @@ function App() {
   const [readOnly, setReadOnly] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [pendingAction, _setPendingAction] = useState<PendingAction>(null);
   const pendingActionRef = useRef<PendingAction>(null);
   const setPendingAction = useCallback((action: PendingAction) => {
@@ -217,6 +219,10 @@ function App() {
     setFontSize(Math.max(fontSize - 1, 8));
   }, [fontSize, setFontSize]);
 
+  const handleFontSizeReset = useCallback(() => {
+    setFontSize(14);
+  }, [setFontSize]);
+
   const handleWrapColumnChange = useCallback(() => {
     const input = window.prompt("折り返し文字数を入力してください", String(wrapColumn));
     if (input !== null) {
@@ -266,10 +272,26 @@ function App() {
         e.preventDefault();
         doSave();
       }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=")) {
+        e.preventDefault();
+        handleFontSizeIncrease();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "-") {
+        e.preventDefault();
+        handleFontSizeDecrease();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "0") {
+        e.preventDefault();
+        handleFontSizeReset();
+      }
+      if (e.key === "F1") {
+        e.preventDefault();
+        setHelpOpen(true);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleNew, handleOpen, doSave]);
+  }, [handleNew, handleOpen, doSave, handleFontSizeIncrease, handleFontSizeDecrease, handleFontSizeReset]);
 
   // --- Intercept window close button ---
 
@@ -378,6 +400,12 @@ function App() {
             icon: "text_decrease",
             shortcut: "Ctrl+-",
             action: handleFontSizeDecrease,
+          },
+          {
+            label: "文字サイズをリセット",
+            icon: "format_size",
+            shortcut: "Ctrl+0",
+            action: handleFontSizeReset,
             dividerAfter: true,
           },
           {
@@ -408,6 +436,13 @@ function App() {
             label: "設定...",
             icon: "settings",
             action: () => setSettingsOpen(true),
+            dividerAfter: true,
+          },
+          {
+            label: "キーバインド一覧",
+            icon: "keyboard",
+            shortcut: "F1",
+            action: () => setHelpOpen(true),
           },
         ],
       },
@@ -424,6 +459,7 @@ function App() {
       handleSelectAll,
       handleFontSizeIncrease,
       handleFontSizeDecrease,
+      handleFontSizeReset,
       handleWrapColumnChange,
       isModified,
       readOnly,
@@ -459,6 +495,7 @@ function App() {
         onDiscard={handleConfirmDiscard}
         onCancel={handleConfirmCancel}
       />
+      <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }

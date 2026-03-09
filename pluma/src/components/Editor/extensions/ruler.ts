@@ -27,19 +27,31 @@ function buildRuler(
   ticks.className = "cm-ruler-ticks";
 
   for (let i = 1; i <= maxCols; i++) {
-    const tick = document.createElement("span");
     if (i % 10 === 0) {
-      tick.className = "cm-ruler-tick cm-ruler-tick-major";
-      tick.textContent = String(i);
+      // Major tick: tall line + number label
+      const line = document.createElement("div");
+      line.className = "cm-ruler-tick cm-ruler-tick-10";
+      line.style.left = `${i * charW}px`;
+      ticks.appendChild(line);
+
+      const label = document.createElement("span");
+      label.className = "cm-ruler-label";
+      label.textContent = String(i);
+      label.style.left = `${i * charW}px`;
+      ticks.appendChild(label);
     } else if (i % 5 === 0) {
-      tick.className = "cm-ruler-tick cm-ruler-tick-minor";
-      tick.textContent = "|";
+      // Medium tick
+      const line = document.createElement("div");
+      line.className = "cm-ruler-tick cm-ruler-tick-5";
+      line.style.left = `${i * charW}px`;
+      ticks.appendChild(line);
     } else {
-      tick.className = "cm-ruler-tick cm-ruler-tick-minor";
-      tick.textContent = "'";
+      // Minor tick
+      const line = document.createElement("div");
+      line.className = "cm-ruler-tick cm-ruler-tick-1";
+      line.style.left = `${i * charW}px`;
+      ticks.appendChild(line);
     }
-    tick.style.left = `${i * charW}px`;
-    ticks.appendChild(tick);
   }
 
   ruler.appendChild(ticks);
@@ -78,14 +90,12 @@ export function rulerExtension(wrapColumn: number) {
             view.dom.appendChild(this.rulerDom);
             view.contentDOM.appendChild(this.lineDom);
 
-            // Align ruler with content area (skip gutters + content padding)
-            const gutters = view.dom.querySelector(".cm-gutters");
-            const gutterW = gutters
-              ? gutters.getBoundingClientRect().width
-              : 0;
-            const contentPadding =
-              parseFloat(getComputedStyle(view.contentDOM).paddingLeft) || 0;
-            this.rulerDom.style.left = `${gutterW + contentPadding}px`;
+            // Align ruler with the exact text rendering position
+            const domRect = view.dom.getBoundingClientRect();
+            const coords = view.coordsAtPos(0);
+            if (coords) {
+              this.rulerDom.style.left = `${coords.left - domRect.left}px`;
+            }
           });
         }
 
@@ -113,10 +123,28 @@ export function rulerExtension(wrapColumn: number) {
       },
       "& .cm-ruler-tick": {
         position: "absolute",
+        bottom: "0",
+        width: "1px",
+        transform: "translateX(-0.5px)",
+        userSelect: "none",
+      },
+      "& .cm-ruler-tick-1": {
+        height: "4px",
+      },
+      "& .cm-ruler-tick-5": {
+        height: "8px",
+      },
+      "& .cm-ruler-tick-10": {
+        height: "12px",
+      },
+      "& .cm-ruler-label": {
+        position: "absolute",
+        top: "0",
         transform: "translateX(-50%)",
         fontSize: "9px",
-        lineHeight: "20px",
+        lineHeight: "12px",
         userSelect: "none",
+        whiteSpace: "nowrap",
       },
       "& .cm-ruler-line": {
         position: "absolute",
@@ -136,10 +164,13 @@ export function rulerExtension(wrapColumn: number) {
         borderBottom: "1px solid #ccc",
         backgroundColor: "#ffffff",
       },
-      "& .cm-ruler-tick-minor": {
-        color: "#999",
+      "& .cm-ruler-tick": {
+        backgroundColor: "#999",
       },
-      "& .cm-ruler-tick-major": {
+      "& .cm-ruler-tick-10": {
+        backgroundColor: "#666",
+      },
+      "& .cm-ruler-label": {
         color: "#000",
       },
       "& .cm-ruler-line": {
@@ -153,10 +184,13 @@ export function rulerExtension(wrapColumn: number) {
           borderBottom: "1px solid #3c3c3c",
           backgroundColor: "#1e1e1e",
         },
-        "& .cm-ruler-tick-minor": {
-          color: "#666",
+        "& .cm-ruler-tick": {
+          backgroundColor: "#666",
         },
-        "& .cm-ruler-tick-major": {
+        "& .cm-ruler-tick-10": {
+          backgroundColor: "#999",
+        },
+        "& .cm-ruler-label": {
           color: "#ccc",
         },
         "& .cm-ruler-line": {
