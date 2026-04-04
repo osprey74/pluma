@@ -45,3 +45,106 @@ body,
 .editor-container .cm-scroller {
   overflow: auto;
 }
+
+/* ============================
+   Print overlay (hidden on screen)
+   ============================ */
+
+.print-overlay {
+  display: none;
+}
+
+/* ============================
+   Print styles
+   ============================ */
+
+@media print {
+  @page {
+    margin: 15mm;
+  }
+
+  /* Hide all UI chrome */
+  .menu-bar,
+  .toolbar,
+  .tabbar,
+  .status-bar,
+  .inspector-bottom-panel,
+  .md-resizer,
+  .md-preview-header,
+  .md-preview,
+  .preview-fullscreen,
+  .settings-overlay,
+  .confirm-overlay,
+  .help-overlay {
+    display: none !important;
+  }
+
+  /* Reset layout */
+  html, body, #root {
+    height: auto;
+    overflow: visible;
+  }
+
+  .app {
+    height: auto;
+    display: block;
+    background: white;
+    color: black;
+  }
+
+  .main-area {
+    display: block;
+    overflow: visible;
+    height: auto;
+  }
+
+  /* Hide editor when print overlay is active */
+  .app.printing .main-area,
+  .app.printing .editor-container {
+    display: none !important;
+  }
+
+  .app.printing .print-overlay {
+    display: block !important;
+  }
+
+  .print-overlay {
+    display: block;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Text print styles */
+  .print-text {
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-family: 'Source Han Code JP', monospace;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: black;
+    background: white;
+  }
+
+  /* Markdown print styles */
+  .print-markdown {
+    font-family: sans-serif;
+    font-size: 11pt;
+    line-height: 1.7;
+    color: black;
+    background: white;
+    max-width: none;
+  }
+
+  .print-markdown h1 { font-size: 20pt; border-bottom: 1px solid #ccc; padding-bottom: 4pt; }
+  .print-markdown h2 { font-size: 16pt; border-bottom: 1px solid #ddd; padding-bottom: 3pt; }
+  .print-markdown h3 { font-size: 13pt; }
+  .print-markdown pre { border: 1px solid #ddd; padding: 8pt; background: #f8f8f8; }
+  .print-markdown code { font-family: 'Source Han Code JP', monospace; font-size: 10pt; }
+  .print-markdown table { border-collapse: collapse; width: 100%; }
+  .print-markdown th, .print-markdown td { border: 1px solid #ccc; padding: 4pt 8pt; }
+  .print-markdown th { background: #f0f0f0; }
+  .print-markdown blockquote { border-left: 3px solid #ccc; padding-left: 10pt; color: #555; }
+  .print-markdown img { max-width: 100%; }
+  .print-markdown a { color: black; text-decoration: underline; }
+  .print-markdown a::after { content: " (" attr(href) ")"; font-size: 9pt; color: #666; }
+}

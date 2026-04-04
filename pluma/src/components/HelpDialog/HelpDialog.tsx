@@ -23,6 +23,7 @@ const KEYBINDING_GROUPS: KeyBindingGroup[] = [
       { shortcut: "Ctrl+N", description: "新規作成" },
       { shortcut: "Ctrl+O", description: "ファイルを開く" },
       { shortcut: "Ctrl+S", description: "保存（未保存時は名前を付けて保存）" },
+      { shortcut: "Ctrl+P", description: "印刷" },
       { shortcut: "Ctrl+W", description: "タブを閉じる" },
     ],
   },

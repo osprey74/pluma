@@ -142,6 +142,32 @@
   }
 }
 
+.settings-credits {
+  padding: 4px 20px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.settings-credits a {
+  color: #888;
+  text-decoration: none;
+}
+
+.settings-credits a:hover {
+  text-decoration: underline;
+  color: #2563eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  .settings-credits a {
+    color: #718096;
+  }
+
+  .settings-credits a:hover {
+    color: #60a5fa;
+  }
+}
+
 .settings-footer {
   display: flex;
   justify-content: flex-end;

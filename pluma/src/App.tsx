@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { undo, redo } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
 import Editor, { EditorHandle } from "./components/Editor/Editor";
 import MenuBar from "./components/MenuBar/MenuBar";
 import TabBar, { type TabInfo } from "./components/TabBar/TabBar";
@@ -13,6 +14,7 @@ import HelpDialog from "./components/HelpDialog/HelpDialog";
 import { InvisibleInspector } from "./components/InvisibleInspector";
 import { InspectorPreview } from "./components/InvisibleInspector/InspectorPreview";
 import { MarkdownPreview, type MarkdownPreviewHandle } from "./components/MarkdownPreview/MarkdownPreview";
+import { marked } from "marked";
 import { useFileIO, getRecentFiles } from "./hooks/useFileIO";
 import { useEditorStore } from "./stores/editorStore";
 import type { WrapMode } from "./stores/editorStore";
@@ -247,6 +249,7 @@ function App() {
           const idx = prev.findIndex((t) => t.id === tabId);
           const newActive = remaining[Math.min(idx, remaining.length - 1)];
           setActiveTabId(newActive.id);
+          setMdPreview(false);
           restoreTabToStore(newActive);
           setEditorKey((k) => k + 1);
         }
@@ -501,8 +504,52 @@ function App() {
   const [mdPreviewText, setMdPreviewText] = useState("");
 
   const handleToggleMdPreview = useCallback(() => {
+    // Only allow toggling on if it's a markdown file
+    if (!mdPreview && !isMarkdownFile) return;
     setMdPreview((v) => !v);
-  }, []);
+  }, [mdPreview, isMarkdownFile]);
+
+  // --- Print ---
+
+  const [printContent, setPrintContent] = useState<{ type: "text" | "markdown"; html: string } | null>(null);
+
+  const hasContent = activeTab.content.length > 0 || !!filePath;
+
+  const handlePrint = useCallback(async () => {
+    const text = editorRef.current?.getContent() ?? "";
+    if (!text) return;
+
+    // Prepare print content (swap DOM for PDF generation)
+    if (mdPreview) {
+      const html = marked.parse(text, { async: false }) as string;
+      setPrintContent({ type: "markdown", html });
+    } else {
+      const escaped = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      setPrintContent({ type: "text", html: escaped });
+    }
+
+    const fp = useEditorStore.getState().filePath;
+    const fileNameFull = fp ? fp.split(/[/\\]/).pop() ?? "Untitled" : "Untitled";
+    const fileName = fileNameFull.replace(/\.[^.]+$/, "");
+
+    // Set document.title to filename so CDP header template picks it up
+    const origTitle = document.title;
+    document.title = fileNameFull;
+
+    // Wait for DOM update, then generate PDF via CDP
+    await new Promise((r) => setTimeout(r, 150));
+    try {
+      await invoke("print_to_pdf", { fileName });
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      window.print();
+    }
+    document.title = origTitle;
+    setPrintContent(null);
+  }, [mdPreview]);
 
   useEffect(() => {
     if (!mdPreview) return;
@@ -611,6 +658,10 @@ function App() {
         e.preventDefault();
         doSave();
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === "p") {
+        e.preventDefault();
+        handlePrint();
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === "w") {
         e.preventDefault();
         handleCloseTab(activeTabId);
@@ -642,7 +693,7 @@ function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleNew, handleOpen, doSave, handleCloseTab, activeTabId, handleFontSizeIncrease, handleFontSizeDecrease, handleFontSizeReset, handleToggleInspector, handleToggleMdPreview]);
+  }, [handleNew, handleOpen, doSave, handlePrint, handleCloseTab, activeTabId, handleFontSizeIncrease, handleFontSizeDecrease, handleFontSizeReset, handleToggleInspector, handleToggleMdPreview]);
 
   // --- Intercept window close button ---
 
@@ -690,6 +741,13 @@ function App() {
             icon: "tab_close",
             shortcut: "Ctrl+W",
             action: () => handleCloseTab(activeTabId),
+          },
+          {
+            label: "印刷...",
+            icon: "print",
+            shortcut: "Ctrl+P",
+            action: handlePrint,
+            disabled: !hasContent,
             dividerAfter: true,
           },
           ...getRecentFiles().map((path, i, arr) => ({
@@ -822,7 +880,7 @@ function App() {
       },
     ],
     [
-      handleNew, handleOpen, handleOpenRecent, handleCloseTab, handleExit,
+      handleNew, handleOpen, handleOpenRecent, handleCloseTab, handlePrint, hasContent, handleExit,
       doSave, handleUndo, handleRedo, handleFind, handleSelectAll,
       handleFontSizeIncrease, handleFontSizeDecrease, handleFontSizeReset,
       handleWrapColumnChange, handleToggleInspector, handleToggleMdPreview,
@@ -837,6 +895,7 @@ function App() {
       { icon: "note_add", title: "新規作成 (Ctrl+N)", action: handleNew, colorClass: "tc-blue" },
       { icon: "folder_open", title: "開く (Ctrl+O)", action: handleOpen, colorClass: "tc-orange" },
       { icon: "save", title: "保存 (Ctrl+S)", action: doSave, disabled: !isModified, colorClass: "tc-blue" },
+      { icon: "print", title: "印刷 (Ctrl+P)", action: handlePrint, disabled: !hasContent, colorClass: "tc-gray" },
       { icon: "", title: "", action: () => {}, separator: true },
       { icon: "undo", title: "元に戻す (Ctrl+Z)", action: handleUndo, disabled: readOnly, colorClass: "tc-teal" },
       { icon: "redo", title: "やり直し (Ctrl+Y)", action: handleRedo, disabled: readOnly, colorClass: "tc-teal" },
@@ -856,7 +915,7 @@ function App() {
       { icon: "keyboard", title: "キーバインド一覧 (F1)", action: () => setHelpOpen(true), colorClass: "tc-gray" },
     ],
     [
-      handleNew, handleOpen, doSave, isModified, readOnly,
+      handleNew, handleOpen, doSave, handlePrint, hasContent, isModified, readOnly,
       handleUndo, handleRedo, handleFind,
       handleFontSizeIncrease, handleFontSizeDecrease, handleFontSizeReset,
       wrapMode, setWrapMode, inspectorActive, handleToggleInspector,
@@ -876,7 +935,7 @@ function App() {
   }, [inspectorActive, inspectorMode, getEditorText, editorKey]);
 
   return (
-    <div className="app">
+    <div className={`app${printContent ? " printing" : ""}`}>
       <MenuBar menus={menus} readOnly={readOnly} />
       <Toolbar items={toolbarItems} />
       <TabBar
@@ -934,6 +993,14 @@ function App() {
         onCancel={handleConfirmCancel}
       />
       <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
+      {printContent && (
+        <div className="print-overlay">
+          <div
+            className={printContent.type === "markdown" ? "print-markdown" : "print-text"}
+            dangerouslySetInnerHTML={{ __html: printContent.html }}
+          />
+        </div>
+      )}
     </div>
   );
 }

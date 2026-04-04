@@ -2,6 +2,7 @@ mod commands;
 
 use commands::encoding::{read_file, read_file_with_encoding};
 use commands::file_io::{get_file_size, read_file_chunk, write_file};
+use commands::print::print_to_pdf;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -14,6 +15,7 @@ pub fn run() {
             write_file,
             read_file_chunk,
             get_file_size,
+            print_to_pdf,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

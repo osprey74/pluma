@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEditorStore } from "../../stores/editorStore";
 import "./SettingsDialog.css";
 
@@ -163,6 +164,19 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           >
             ABCabc あいう 123 サンプルテキスト
           </div>
+        </div>
+
+        <div className="settings-credits">
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              openUrl("https://www.flaticon.com/free-icons/scroll");
+            }}
+            title="scroll icons"
+          >
+            Scroll icons created by Freepik - Flaticon
+          </a>
         </div>
 
         <div className="settings-footer">
