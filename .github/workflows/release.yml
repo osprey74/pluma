@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: pluma/src-tauri
+
+      - name: Install frontend dependencies
+        working-directory: pluma
+        run: npm ci
+
+      - name: Build Tauri app
+        working-directory: pluma
+        run: npx tauri build
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: false
+          files: |
+            pluma/src-tauri/target/release/bundle/msi/*.msi
+            pluma/src-tauri/target/release/bundle/nsis/*-setup.exe
