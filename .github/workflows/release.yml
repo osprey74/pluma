@@ -26,14 +26,12 @@ jobs:
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: pluma/src-tauri
+          workspaces: src-tauri
 
       - name: Install frontend dependencies
-        working-directory: pluma
         run: npm ci
 
       - name: Build Tauri app
-        working-directory: pluma
         run: npx tauri build
 
       - name: Create draft release
@@ -42,5 +40,5 @@ jobs:
           draft: true
           generate_release_notes: false
           files: |
-            pluma/src-tauri/target/release/bundle/msi/*.msi
-            pluma/src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*-setup.exe
