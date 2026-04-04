@@ -11,6 +11,9 @@ interface PersistedSettings {
   editorBgColor: string;
   wrapMode: WrapMode;
   wrapColumn: number;
+  showInspector: boolean;
+  inspectorWidth: number;
+  mdPreviewWidth: number;
 }
 
 const DEFAULT_SETTINGS: PersistedSettings = {
@@ -20,6 +23,9 @@ const DEFAULT_SETTINGS: PersistedSettings = {
   editorBgColor: "",
   wrapMode: "none",
   wrapColumn: 80,
+  showInspector: false,
+  inspectorWidth: 340,
+  mdPreviewWidth: 500,
 };
 
 function loadSettings(): PersistedSettings {
@@ -73,10 +79,25 @@ export interface EditorStore {
   setEditorBgColor: (editorBgColor: string) => void;
   setWrapMode: (wrapMode: WrapMode) => void;
   setWrapColumn: (wrapColumn: number) => void;
+  showInspector: boolean;
+  inspectorWidth: number;
+  mdPreviewWidth: number;
+  setShowInspector: (show: boolean) => void;
+  setInspectorWidth: (width: number) => void;
+  setMdPreviewWidth: (width: number) => void;
   reset: () => void;
 }
 
 const initial = loadSettings();
+
+function persist(s: EditorStore) {
+  saveSettings({
+    fontFamily: s.fontFamily, fontSize: s.fontSize, fontColor: s.fontColor,
+    editorBgColor: s.editorBgColor, wrapMode: s.wrapMode, wrapColumn: s.wrapColumn,
+    showInspector: s.showInspector, inspectorWidth: s.inspectorWidth,
+    mdPreviewWidth: s.mdPreviewWidth,
+  });
+}
 
 export const useEditorStore = create<EditorStore>((set, get) => ({
   filePath: null,
@@ -94,6 +115,9 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   editorBgColor: initial.editorBgColor,
   wrapMode: initial.wrapMode,
   wrapColumn: initial.wrapColumn,
+  showInspector: initial.showInspector,
+  inspectorWidth: initial.inspectorWidth,
+  mdPreviewWidth: initial.mdPreviewWidth,
 
   setFileInfo: (info) =>
     set({
@@ -110,36 +134,15 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   setIsModified: (isModified) => set({ isModified }),
   setCursorPosition: (line, col) => set({ cursorLine: line, cursorCol: col }),
   setDelimiter: (delimiter) => set({ delimiter }),
-  setFontFamily: (fontFamily) => {
-    set({ fontFamily });
-    const s = get();
-    saveSettings({ fontFamily, fontSize: s.fontSize, fontColor: s.fontColor, editorBgColor: s.editorBgColor, wrapMode: s.wrapMode, wrapColumn: s.wrapColumn });
-  },
-  setFontSize: (fontSize) => {
-    set({ fontSize });
-    const s = get();
-    saveSettings({ fontFamily: s.fontFamily, fontSize, fontColor: s.fontColor, editorBgColor: s.editorBgColor, wrapMode: s.wrapMode, wrapColumn: s.wrapColumn });
-  },
-  setFontColor: (fontColor) => {
-    set({ fontColor });
-    const s = get();
-    saveSettings({ fontFamily: s.fontFamily, fontSize: s.fontSize, fontColor, editorBgColor: s.editorBgColor, wrapMode: s.wrapMode, wrapColumn: s.wrapColumn });
-  },
-  setEditorBgColor: (editorBgColor) => {
-    set({ editorBgColor });
-    const s = get();
-    saveSettings({ fontFamily: s.fontFamily, fontSize: s.fontSize, fontColor: s.fontColor, editorBgColor, wrapMode: s.wrapMode, wrapColumn: s.wrapColumn });
-  },
-  setWrapMode: (wrapMode) => {
-    set({ wrapMode });
-    const s = get();
-    saveSettings({ fontFamily: s.fontFamily, fontSize: s.fontSize, fontColor: s.fontColor, editorBgColor: s.editorBgColor, wrapMode, wrapColumn: s.wrapColumn });
-  },
-  setWrapColumn: (wrapColumn) => {
-    set({ wrapColumn });
-    const s = get();
-    saveSettings({ fontFamily: s.fontFamily, fontSize: s.fontSize, fontColor: s.fontColor, editorBgColor: s.editorBgColor, wrapMode: s.wrapMode, wrapColumn });
-  },
+  setFontFamily: (fontFamily) => { set({ fontFamily }); persist(get()); },
+  setFontSize: (fontSize) => { set({ fontSize }); persist(get()); },
+  setFontColor: (fontColor) => { set({ fontColor }); persist(get()); },
+  setEditorBgColor: (editorBgColor) => { set({ editorBgColor }); persist(get()); },
+  setWrapMode: (wrapMode) => { set({ wrapMode }); persist(get()); },
+  setWrapColumn: (wrapColumn) => { set({ wrapColumn }); persist(get()); },
+  setShowInspector: (showInspector) => { set({ showInspector }); persist(get()); },
+  setInspectorWidth: (inspectorWidth) => { set({ inspectorWidth }); persist(get()); },
+  setMdPreviewWidth: (mdPreviewWidth) => { set({ mdPreviewWidth }); persist(get()); },
   reset: () =>
     set({
       filePath: null,

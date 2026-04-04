@@ -26,6 +26,13 @@ body,
   }
 }
 
+.main-area {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+}
+
 .editor-container {
   flex: 1;
   overflow: hidden;

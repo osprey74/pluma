@@ -58,26 +58,13 @@ function buildRuler(
   return ruler;
 }
 
-function buildGuideLine(
-  wrapColumn: number,
-  charW: number,
-): HTMLDivElement {
-  const line = document.createElement("div");
-  line.className = "cm-ruler-line";
-  line.style.left = `${wrapColumn * charW}px`;
-  return line;
-}
-
 export function rulerExtension(wrapColumn: number) {
   return [
     ViewPlugin.fromClass(
       class {
         rulerDom: HTMLDivElement | null = null;
-        lineDom: HTMLDivElement | null = null;
 
         constructor(view: EditorView) {
-          // Defer to requestAnimationFrame so font is loaded and
-          // defaultCharacterWidth is accurate after first paint
           requestAnimationFrame(() => {
             const charW = getCharWidth(view);
             const maxCols = Math.max(
@@ -85,12 +72,9 @@ export function rulerExtension(wrapColumn: number) {
               Math.ceil(window.innerWidth / charW) + 10,
             );
             this.rulerDom = buildRuler(maxCols, charW);
-            this.lineDom = buildGuideLine(wrapColumn, charW);
 
             view.dom.appendChild(this.rulerDom);
-            view.contentDOM.appendChild(this.lineDom);
 
-            // Align ruler with the exact text rendering position
             const domRect = view.dom.getBoundingClientRect();
             const coords = view.coordsAtPos(0);
             if (coords) {
@@ -103,7 +87,6 @@ export function rulerExtension(wrapColumn: number) {
 
         destroy() {
           this.rulerDom?.remove();
-          this.lineDom?.remove();
         }
       },
     ),
@@ -113,7 +96,7 @@ export function rulerExtension(wrapColumn: number) {
         position: "absolute",
         top: "0",
         right: "0",
-        height: "20px",
+        height: "31px",
         zIndex: "5",
         pointerEvents: "none",
       },
@@ -129,33 +112,25 @@ export function rulerExtension(wrapColumn: number) {
         userSelect: "none",
       },
       "& .cm-ruler-tick-1": {
-        height: "4px",
+        height: "5px",
       },
       "& .cm-ruler-tick-5": {
-        height: "8px",
+        height: "10px",
       },
       "& .cm-ruler-tick-10": {
-        height: "12px",
+        height: "14px",
       },
       "& .cm-ruler-label": {
         position: "absolute",
-        top: "0",
+        top: "1px",
         transform: "translateX(-50%)",
         fontSize: "9px",
         lineHeight: "12px",
         userSelect: "none",
         whiteSpace: "nowrap",
       },
-      "& .cm-ruler-line": {
-        position: "absolute",
-        top: "0",
-        bottom: "0",
-        width: "1px",
-        pointerEvents: "none",
-        zIndex: "1",
-      },
       "& .cm-scroller": {
-        paddingTop: "20px",
+        paddingTop: "31px",
       },
     }),
     // Light theme colors
@@ -173,9 +148,6 @@ export function rulerExtension(wrapColumn: number) {
       "& .cm-ruler-label": {
         color: "#000",
       },
-      "& .cm-ruler-line": {
-        backgroundColor: "#aaa",
-      },
     }),
     // Dark theme colors
     EditorView.theme(
@@ -192,9 +164,6 @@ export function rulerExtension(wrapColumn: number) {
         },
         "& .cm-ruler-label": {
           color: "#ccc",
-        },
-        "& .cm-ruler-line": {
-          backgroundColor: "#555",
         },
       },
       { dark: true },

@@ -1,0 +1,117 @@
+.tabbar {
+  display: flex;
+  align-items: stretch;
+  background: #e8e8e8;
+  border-bottom: 1px solid #d0d0d0;
+  flex-shrink: 0;
+  height: 30px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.tabbar::-webkit-scrollbar {
+  height: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px 0 12px;
+  min-width: 0;
+  max-width: 180px;
+  cursor: pointer;
+  font-size: 12px;
+  border-right: 1px solid #d0d0d0;
+  color: #666;
+  background: transparent;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.tab.active {
+  background: #ffffff;
+  color: #333;
+  border-bottom: 1px solid #ffffff;
+  margin-bottom: -1px;
+}
+
+.tab-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ed8936;
+  flex-shrink: 0;
+}
+
+.tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  padding: 0;
+  opacity: 0;
+  flex-shrink: 0;
+}
+
+.tab-close .material-symbols-rounded {
+  font-size: 14px;
+}
+
+.tab:hover .tab-close,
+.tab.active .tab-close {
+  opacity: 0.5;
+}
+
+.tab-close:hover {
+  opacity: 1 !important;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .tabbar {
+    background: #252526;
+    border-bottom-color: #3e3e42;
+  }
+
+  .tab {
+    border-right-color: #3e3e42;
+    color: #888;
+  }
+
+  .tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .tab.active {
+    background: #1e1e1e;
+    color: #cccccc;
+    border-bottom-color: #1e1e1e;
+  }
+
+  .tab-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}

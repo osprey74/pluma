@@ -23,6 +23,7 @@ const KEYBINDING_GROUPS: KeyBindingGroup[] = [
       { shortcut: "Ctrl+N", description: "新規作成" },
       { shortcut: "Ctrl+O", description: "ファイルを開く" },
       { shortcut: "Ctrl+S", description: "保存（未保存時は名前を付けて保存）" },
+      { shortcut: "Ctrl+W", description: "タブを閉じる" },
     ],
   },
   {
@@ -41,6 +42,9 @@ const KEYBINDING_GROUPS: KeyBindingGroup[] = [
       { shortcut: "Ctrl++", description: "文字サイズを拡大" },
       { shortcut: "Ctrl+-", description: "文字サイズを縮小" },
       { shortcut: "Ctrl+0", description: "文字サイズをリセット" },
+      { shortcut: "Ctrl+ホイール", description: "文字サイズを拡大/縮小" },
+      { shortcut: "Ctrl+Shift+I", description: "不可視文字インスペクター" },
+      { shortcut: "Ctrl+Shift+M", description: "Markdownプレビュー" },
     ],
   },
   {
@@ -82,7 +86,7 @@ export default function HelpDialog({ open, onClose }: HelpDialogProps) {
     <div className="help-overlay" onClick={onClose}>
       <div className="help-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="help-header">
-          <span className="material-symbols-outlined">keyboard</span>
+          <span className="material-symbols-rounded">keyboard</span>
           キーバインド一覧
         </div>
         <div className="help-body">
