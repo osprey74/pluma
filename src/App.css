@@ -42,6 +42,9 @@ body,
 
 .editor-container .cm-editor {
   height: 100%;
+}
+
+.editor-container .cm-content {
   -webkit-user-select: auto;
   user-select: auto;
 }
