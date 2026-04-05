@@ -67,6 +67,21 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Generate macOS icon
+        run: |
+          ICONSET=src-tauri/icons/icon.iconset
+          mkdir -p "$ICONSET"
+          SRC=src-tauri/icons/icon.png
+          for SIZE in 16 32 128 256 512; do
+            sips -z $SIZE $SIZE "$SRC" --out "$ICONSET/icon_${SIZE}x${SIZE}.png"
+            DOUBLE=$((SIZE * 2))
+            if [ $DOUBLE -le 1024 ]; then
+              sips -z $DOUBLE $DOUBLE "$SRC" --out "$ICONSET/icon_${SIZE}x${SIZE}@2x.png"
+            fi
+          done
+          iconutil -c icns "$ICONSET" -o src-tauri/icons/icon.icns
+          rm -rf "$ICONSET"
+
       - name: Install frontend dependencies
         run: npm ci
 
