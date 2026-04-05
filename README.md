@@ -104,6 +104,15 @@ npm run tauri dev
 npm run tauri build
 ```
 
+## 更新履歴
+
+### v1.0.1
+- プレビュー画面（Markdownプレビュー・不可視文字プレビュー）でのCtrl+Cによるコピーを無効化
+- ツールバー・タブバー・メニューバー・ステータスバーのテキスト選択を無効化
+
+### v1.0.0
+- 初回リリース
+
 ## クレジット
 
 - アプリアイコン: [Scroll icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/scroll)

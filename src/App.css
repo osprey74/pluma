@@ -17,6 +17,8 @@ body,
   height: 100vh;
   background-color: #ffffff;
   color: #333333;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -40,6 +42,8 @@ body,
 
 .editor-container .cm-editor {
   height: 100%;
+  -webkit-user-select: auto;
+  user-select: auto;
 }
 
 .editor-container .cm-scroller {

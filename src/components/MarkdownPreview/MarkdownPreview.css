@@ -50,6 +50,8 @@
   line-height: 1.7;
   font-family: sans-serif;
   font-size: 14px;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Headings */
