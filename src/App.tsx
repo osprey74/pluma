@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { undo, redo } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { listen, TauriEvent } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import Editor, { EditorHandle } from "./components/Editor/Editor";
 import MenuBar from "./components/MenuBar/MenuBar";
@@ -10,6 +11,7 @@ import Toolbar, { type ToolbarItem } from "./components/Toolbar/Toolbar";
 import StatusBar from "./components/StatusBar/StatusBar";
 import SettingsDialog from "./components/SettingsDialog/SettingsDialog";
 import ConfirmSaveDialog from "./components/ConfirmSaveDialog/ConfirmSaveDialog";
+import InfoDialog from "./components/InfoDialog/InfoDialog";
 import HelpDialog from "./components/HelpDialog/HelpDialog";
 import { InvisibleInspector } from "./components/InvisibleInspector";
 import { InspectorPreview } from "./components/InvisibleInspector/InspectorPreview";
@@ -83,6 +85,9 @@ function App() {
   const editorRef = useRef<EditorHandle>(null);
   const [tabs, setTabs] = useState<TabData[]>(() => [createTab()]);
   const [activeTabId, setActiveTabId] = useState<number>(tabs[0].id);
+  const tabsRef = useRef(tabs);
+  tabsRef.current = tabs;
+  const switchToTabRef = useRef<(tabId: number) => void>(() => {});
   const [editorKey, setEditorKey] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -166,6 +171,7 @@ function App() {
       setEditorKey((k) => k + 1);
     }
   }, [activeTabId, tabs, syncCurrentTabContent, restoreTabToStore]);
+  switchToTabRef.current = switchToTab;
 
   // Keep activeTab content in sync (needed since switchToTab reads from tabs state)
   useEffect(() => {
@@ -186,8 +192,15 @@ function App() {
     try {
       const result = await openFile();
       if (!result) return;
-      syncCurrentTabContent();
+      // Switch to existing tab if already open
       const s = useEditorStore.getState();
+      const existing = tabs.find((t) => t.filePath === s.filePath);
+      if (existing) {
+        switchToTab(existing.id);
+        setInfoMessage("既に開いているファイルです");
+        return;
+      }
+      syncCurrentTabContent();
       const tab = createTab({
         content: result.text,
         readOnly: result.readOnly,
@@ -205,11 +218,18 @@ function App() {
     } catch (err) {
       console.error("Failed to open file:", err);
     }
-  }, [openFile, syncCurrentTabContent, restoreTabToStore]);
+  }, [tabs, switchToTab, openFile, syncCurrentTabContent, restoreTabToStore]);
 
   const doOpenRecentInNewTab = useCallback(
     async (path: string) => {
       try {
+        // Switch to existing tab if already open
+        const existing = tabs.find((t) => t.filePath === path);
+        if (existing) {
+          switchToTab(existing.id);
+          setInfoMessage("既に開いているファイルです");
+          return;
+        }
         const result = await openFileByPath(path);
         if (!result) return;
         syncCurrentTabContent();
@@ -232,7 +252,7 @@ function App() {
         console.error("Failed to open recent file:", err);
       }
     },
-    [openFileByPath, syncCurrentTabContent, restoreTabToStore],
+    [tabs, switchToTab, openFileByPath, syncCurrentTabContent, restoreTabToStore],
   );
 
   const doCloseTab = useCallback(
@@ -695,6 +715,124 @@ function App() {
     return () => window.removeEventListener("keydown", handler);
   }, [handleNew, handleOpen, doSave, handlePrint, handleCloseTab, activeTabId, handleFontSizeIncrease, handleFontSizeDecrease, handleFontSizeReset, handleToggleInspector, handleToggleMdPreview]);
 
+  // --- Open files passed via CLI args (file association) ---
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const paths = await invoke<string[]>("get_cli_file_args");
+        if (paths.length > 0) {
+          // Open the first file in the initial empty tab
+          const result = await openFileByPath(paths[0]);
+          if (result) {
+            const s = useEditorStore.getState();
+            setTabs((prev) =>
+              prev.map((t) =>
+                t.id === activeTabId
+                  ? {
+                      ...t,
+                      content: result.text,
+                      readOnly: result.readOnly,
+                      filePath: s.filePath,
+                      encoding: s.encoding,
+                      hasBom: s.hasBom,
+                      lineEnding: s.lineEnding,
+                      fileSize: s.fileSize,
+                      delimiter: s.delimiter,
+                    }
+                  : t,
+              ),
+            );
+            setEditorKey((k) => k + 1);
+          }
+          // Open remaining files in new tabs
+          for (let i = 1; i < paths.length; i++) {
+            const res = await openFileByPath(paths[i]);
+            if (res) {
+              const s = useEditorStore.getState();
+              const tab = createTab({
+                content: res.text,
+                readOnly: res.readOnly,
+                filePath: s.filePath,
+                encoding: s.encoding,
+                hasBom: s.hasBom,
+                lineEnding: s.lineEnding,
+                fileSize: s.fileSize,
+                delimiter: s.delimiter,
+              });
+              setTabs((prev) => [...prev, tab]);
+              setActiveTabId(tab.id);
+              restoreTabToStore(tab);
+              setEditorKey((k) => k + 1);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to open CLI file args:", err);
+      }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // --- Drag & drop files ---
+
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unlisteners: Promise<() => void>[] = [];
+
+    unlisteners.push(
+      listen<{ paths: string[] }>(TauriEvent.DRAG_DROP, async (event) => {
+        setIsDragOver(false);
+        const paths = event.payload.paths;
+        for (const path of paths) {
+          try {
+            // Switch to existing tab if already open
+            const existing = tabsRef.current.find((t) => t.filePath === path);
+            if (existing) {
+              switchToTabRef.current(existing.id);
+              setInfoMessage("既に開いているファイルです");
+              continue;
+            }
+            const result = await openFileByPath(path);
+            if (result) {
+              syncCurrentTabContent();
+              const s = useEditorStore.getState();
+              const tab = createTab({
+                content: result.text,
+                readOnly: result.readOnly,
+                filePath: s.filePath,
+                encoding: s.encoding,
+                hasBom: s.hasBom,
+                lineEnding: s.lineEnding,
+                fileSize: s.fileSize,
+                delimiter: s.delimiter,
+              });
+              setTabs((prev) => [...prev, tab]);
+              setActiveTabId(tab.id);
+              restoreTabToStore(tab);
+              setEditorKey((k) => k + 1);
+            }
+          } catch (err) {
+            console.error("Failed to open dropped file:", err);
+          }
+        }
+      }),
+    );
+
+    unlisteners.push(
+      listen(TauriEvent.DRAG_ENTER, () => setIsDragOver(true)),
+    );
+
+    unlisteners.push(
+      listen(TauriEvent.DRAG_LEAVE, () => setIsDragOver(false)),
+    );
+
+    return () => {
+      unlisteners.forEach((p) => p.then((fn) => fn()));
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // --- Intercept window close button ---
 
   useEffect(() => {
@@ -993,6 +1131,11 @@ function App() {
         onCancel={handleConfirmCancel}
       />
       <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <InfoDialog
+        open={infoMessage !== null}
+        message={infoMessage ?? ""}
+        onClose={() => setInfoMessage(null)}
+      />
       {printContent && (
         <div className="print-overlay">
           <div
@@ -1001,6 +1144,7 @@ function App() {
           />
         </div>
       )}
+      {isDragOver && <div className="drop-overlay">ここにファイルをドロップ</div>}
     </div>
   );
 }

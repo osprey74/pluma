@@ -155,3 +155,20 @@ body,
   .print-markdown a { color: black; text-decoration: underline; }
   .print-markdown a::after { content: " (" attr(href) ")"; font-size: 9pt; color: #666; }
 }
+
+/* --- Drop overlay --- */
+
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.15);
+  border: 3px dashed rgba(59, 130, 246, 0.6);
+  font-size: 20px;
+  font-weight: 600;
+  color: #2563eb;
+  pointer-events: none;
+}
