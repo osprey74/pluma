@@ -168,6 +168,37 @@
   }
 }
 
+.settings-version {
+  padding: 4px 20px 8px;
+  text-align: center;
+  font-size: 11px;
+  color: #999;
+}
+
+.settings-version a {
+  color: #999;
+  text-decoration: none;
+}
+
+.settings-version a:hover {
+  text-decoration: underline;
+  color: #2563eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  .settings-version {
+    color: #666;
+  }
+
+  .settings-version a {
+    color: #666;
+  }
+
+  .settings-version a:hover {
+    color: #60a5fa;
+  }
+}
+
 .settings-footer {
   display: flex;
   justify-content: flex-end;

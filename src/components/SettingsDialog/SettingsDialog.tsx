@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEditorStore } from "../../stores/editorStore";
 import "./SettingsDialog.css";
@@ -32,6 +33,11 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const [localBgColor, setLocalBgColor] = useState(editorBgColor || "#ffffff");
   const [useFontColor, setUseFontColor] = useState(!!fontColor);
   const [useBgColor, setUseBgColor] = useState(!!editorBgColor);
+  const [appVersion, setAppVersion] = useState("");
+
+  useEffect(() => {
+    getVersion().then(setAppVersion);
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -176,6 +182,19 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             title="scroll icons"
           >
             Scroll icons created by Freepik - Flaticon
+          </a>
+        </div>
+
+        <div className="settings-version">
+          Pluma{" "}
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              openUrl("https://github.com/osprey74/pluma");
+            }}
+          >
+            v{appVersion}
           </a>
         </div>
 

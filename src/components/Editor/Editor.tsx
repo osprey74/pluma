@@ -43,6 +43,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
     } = useEditorStore();
 
     const isDark = useMediaDark();
+    const contentRef = useRef(initialContent);
 
     useImperativeHandle(ref, () => ({
       getContent: () => viewRef.current?.state.doc.toString() ?? "",
@@ -158,6 +159,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
             setCursorPosition(line.number, pos - line.from + 1);
           }
           if (update.docChanged) {
+            contentRef.current = update.state.doc.toString();
             setIsModified(true);
           }
         }),
@@ -177,7 +179,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
       }
 
       const state = EditorState.create({
-        doc: initialContent,
+        doc: contentRef.current,
         extensions,
       });
 
