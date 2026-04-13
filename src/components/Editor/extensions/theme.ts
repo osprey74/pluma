@@ -1,6 +1,5 @@
 import { EditorView } from "@codemirror/view";
 import { Extension } from "@codemirror/state";
-import { oneDark } from "@codemirror/theme-one-dark";
 
 const lightTheme = EditorView.theme({
   "&": {
@@ -30,30 +29,44 @@ const lightTheme = EditorView.theme({
   ".cm-activeLine": {
     backgroundColor: "#0000000a",
   },
+  ".cm-panels, .cm-panels.cm-panels-bottom, .cm-panels.cm-panels-top": {
+    backgroundColor: "#f5f5f5",
+    color: "#000",
+    borderColor: "#ddd",
+  },
+  ".cm-panel.cm-search": {
+    backgroundColor: "#f5f5f5",
+    color: "#000",
+  },
+  ".cm-panel.cm-search label": {
+    color: "#000",
+  },
+  ".cm-panel.cm-search input, .cm-panel.cm-search input[type=checkbox]": {
+    color: "#000",
+  },
+  ".cm-panel.cm-search input[type=text]": {
+    backgroundColor: "#fff",
+    color: "#000",
+    border: "1px solid #ccc",
+  },
+  ".cm-panel.cm-search button, .cm-panel.cm-search .cm-button, .cm-button": {
+    backgroundColor: "#f5f5f5",
+    backgroundImage: "none",
+    color: "#000",
+    border: "1px solid #ccc",
+  },
+  ".cm-panel.cm-search button:hover, .cm-panel.cm-search .cm-button:hover, .cm-button:hover": {
+    backgroundColor: "#e8e8e8",
+    backgroundImage: "none",
+  },
+  ".cm-panel.cm-search button[name=close]": {
+    backgroundColor: "transparent",
+    backgroundImage: "none",
+    border: "none",
+    color: "#000",
+  },
 });
 
-const darkThemeOverrides = EditorView.theme(
-  {
-    "&": {
-      height: "100%",
-    },
-    ".cm-cursor, .cm-dropCursor": {
-      borderLeftColor: "#60a5fa",
-      borderLeftWidth: "1px",
-    },
-    "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
-      background: "#3390ff44",
-    },
-    "& .cm-selectionBackground": {
-      background: "#3390ff30",
-    },
-  },
-  { dark: true },
-);
-
-export function getThemeExtension(isDark: boolean): Extension {
-  if (isDark) {
-    return [oneDark, darkThemeOverrides];
-  }
+export function getThemeExtension(): Extension {
   return lightTheme;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useSyncExternalStore } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import {
   EditorView,
   lineNumbers,
@@ -154,27 +154,11 @@ function colorHighlightDecorations(): Extension {
   );
 }
 
-/* ---------- Dark mode hook ---------- */
-
-function useMediaDark(): boolean {
-  const query =
-    typeof window !== "undefined"
-      ? window.matchMedia("(prefers-color-scheme: dark)")
-      : null;
-  const getSnapshot = () => query?.matches ?? false;
-  const subscribe = (callback: () => void) => {
-    query?.addEventListener("change", callback);
-    return () => query?.removeEventListener("change", callback);
-  };
-  return useSyncExternalStore(subscribe, getSnapshot, () => false);
-}
-
 /* ---------- Component ---------- */
 
 export function InspectorPreview({ text, fontFamily, fontSize }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const isDark = useMediaDark();
   const { wrapMode, wrapColumn } = useEditorStore();
 
   const buildStyleExt = useCallback(
@@ -206,7 +190,7 @@ export function InspectorPreview({ text, fontFamily, fontSize }: Props) {
       lineNumbers(),
       EditorState.readOnly.of(true),
       EditorView.editable.of(false),
-      getThemeExtension(isDark),
+      getThemeExtension(),
       rulerExtension(wrapColumn),
       invisibleCharDecorations(),
       colorHighlightDecorations(),
@@ -222,7 +206,7 @@ export function InspectorPreview({ text, fontFamily, fontSize }: Props) {
       view.destroy();
       viewRef.current = null;
     };
-  }, [text, isDark, wrapColumn, buildStyleExt, buildWrapExt]);
+  }, [text, wrapColumn, buildStyleExt, buildWrapExt]);
 
   return <div ref={containerRef} className="preview-fullscreen" />;
 }

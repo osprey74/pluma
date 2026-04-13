@@ -23,14 +23,6 @@
   color: #333;
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-dialog {
-    background: #2d2d2d;
-    border-color: #454545;
-    color: #ccc;
-  }
-}
-
 .settings-header {
   display: flex;
   align-items: center;
@@ -39,12 +31,6 @@
   font-size: 15px;
   font-weight: 600;
   border-bottom: 1px solid #e0e0e0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .settings-header {
-    border-bottom-color: #454545;
-  }
 }
 
 .settings-body {
@@ -83,14 +69,6 @@
   color: inherit;
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-select {
-    background: #3a3a3a;
-    border-color: #555;
-    color: #ccc;
-  }
-}
-
 .settings-row {
   display: flex;
   align-items: center;
@@ -122,24 +100,12 @@
   cursor: default;
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-color {
-    border-color: #555;
-  }
-}
-
 .settings-preview {
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
   min-height: 40px;
   line-height: 1.5;
-}
-
-@media (prefers-color-scheme: dark) {
-  .settings-preview {
-    border-color: #555;
-  }
 }
 
 .settings-credits {
@@ -156,16 +122,6 @@
 .settings-credits a:hover {
   text-decoration: underline;
   color: #2563eb;
-}
-
-@media (prefers-color-scheme: dark) {
-  .settings-credits a {
-    color: #718096;
-  }
-
-  .settings-credits a:hover {
-    color: #60a5fa;
-  }
 }
 
 .settings-version {
@@ -185,32 +141,12 @@
   color: #2563eb;
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-version {
-    color: #666;
-  }
-
-  .settings-version a {
-    color: #666;
-  }
-
-  .settings-version a:hover {
-    color: #60a5fa;
-  }
-}
-
 .settings-footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 20px 16px;
   border-top: 1px solid #e0e0e0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .settings-footer {
-    border-top-color: #454545;
-  }
 }
 
 .settings-btn {
@@ -236,24 +172,4 @@
 
 .settings-btn-ok:hover {
   background: #006cbd;
-}
-
-@media (prefers-color-scheme: dark) {
-  .settings-btn {
-    background: #3a3a3a;
-    border-color: #555;
-  }
-
-  .settings-btn:hover {
-    background: #454545;
-  }
-
-  .settings-btn-ok {
-    background: #0078d4;
-    border-color: #0078d4;
-  }
-
-  .settings-btn-ok:hover {
-    background: #006cbd;
-  }
 }

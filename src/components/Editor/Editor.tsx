@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useSyncExternalStore } from "react";
+import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, rectangularSelection, crosshairCursor } from "@codemirror/view";
 import { EditorState, Extension, Compartment } from "@codemirror/state";
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
@@ -42,7 +42,6 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
       wrapColumn,
     } = useEditorStore();
 
-    const isDark = useMediaDark();
     const contentRef = useRef(initialContent);
 
     useImperativeHandle(ref, () => ({
@@ -87,6 +86,11 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
 
     // Build wrap extension from current settings
     const buildWrapExt = useCallback((): Extension => {
+      // Force no-wrap in CSV mode so visual column padding stays aligned.
+      const ext = getFileExtension();
+      const isCsvMode = !!delimiter && (ext === "csv" || ext === "tsv" || ext === "tab");
+      if (isCsvMode) return [];
+
       if (wrapMode === "window") {
         return EditorView.lineWrapping;
       } else if (wrapMode === "column") {
@@ -98,7 +102,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
         ];
       }
       return [];
-    }, [wrapMode, wrapColumn]);
+    }, [wrapMode, wrapColumn, delimiter, getFileExtension]);
 
     // Create editor once (structural deps only)
     useEffect(() => {
@@ -147,7 +151,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
           { key: "Mod-h", run: openSearchPanel },
           { key: "Mod-d", run: selectNextOccurrence },
         ]),
-        getThemeExtension(isDark),
+        getThemeExtension(),
         rulerCompRef.current.of(rulerExtension(wrapColumn)),
         whitespaceExtension(),
         styleCompRef.current.of(buildStyleExt()),
@@ -194,7 +198,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
         view.destroy();
         viewRef.current = null;
       };
-    }, [isDark, delimiter, readOnly, getFileExtension]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [delimiter, readOnly, getFileExtension]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Dynamically reconfigure style/wrap/ruler when display settings change
     useEffect(() => {
@@ -215,19 +219,3 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
 
 Editor.displayName = "Editor";
 export default Editor;
-
-function useMediaDark(): boolean {
-  const query =
-    typeof window !== "undefined"
-      ? window.matchMedia("(prefers-color-scheme: dark)")
-      : null;
-
-  const getSnapshot = () => query?.matches ?? false;
-
-  const subscribe = (callback: () => void) => {
-    query?.addEventListener("change", callback);
-    return () => query?.removeEventListener("change", callback);
-  };
-
-  return useSyncExternalStore(subscribe, getSnapshot, () => false);
-}

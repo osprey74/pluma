@@ -88,30 +88,3 @@
   opacity: 1 !important;
   background: rgba(0, 0, 0, 0.1);
 }
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .tabbar {
-    background: #252526;
-    border-bottom-color: #3e3e42;
-  }
-
-  .tab {
-    border-right-color: #3e3e42;
-    color: #888;
-  }
-
-  .tab:hover {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  .tab.active {
-    background: #1e1e1e;
-    color: #cccccc;
-    border-bottom-color: #1e1e1e;
-  }
-
-  .tab-close:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-}

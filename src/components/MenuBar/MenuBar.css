@@ -11,14 +11,6 @@
   font-size: 13px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .menu-bar {
-    background-color: #2d2d2d;
-    border-bottom-color: #3c3c3c;
-    color: #cccccc;
-  }
-}
-
 .menu-trigger-wrapper {
   position: relative;
 }
@@ -40,13 +32,6 @@
   background-color: rgba(0, 0, 0, 0.08);
 }
 
-@media (prefers-color-scheme: dark) {
-  .menu-trigger:hover,
-  .menu-trigger.active {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-}
-
 .menu-dropdown {
   position: absolute;
   top: 100%;
@@ -60,14 +45,6 @@
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-}
-
-@media (prefers-color-scheme: dark) {
-  .menu-dropdown {
-    background-color: #2d2d2d;
-    border-color: #454545;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  }
 }
 
 .menu-item {
@@ -93,12 +70,6 @@
 .menu-item:disabled {
   opacity: 0.4;
   cursor: default;
-}
-
-@media (prefers-color-scheme: dark) {
-  .menu-item:hover:not(:disabled) {
-    background-color: #3a3a3a;
-  }
 }
 
 .menu-item-check {
@@ -140,12 +111,6 @@
   background-color: #e0e0e0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .menu-divider {
-    background-color: #454545;
-  }
-}
-
 .readonly-badge {
   margin-left: 8px;
   padding: 2px 8px;
@@ -154,11 +119,4 @@
   color: #856404;
   border-radius: 3px;
   font-family: system-ui, -apple-system, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  .readonly-badge {
-    background-color: #664d03;
-    color: #ffda6a;
-  }
 }

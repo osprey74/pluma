@@ -1,5 +1,48 @@
 # Pluma 作業ログ
 
+## 2026-04-13 セッション
+
+### 実施内容
+
+#### 1. 検索／置換パネルの配色修正
+- **問題**: 検索／置換パネルの背景とボタンが濃いグレーで視認性が悪い
+- **対処**: `lightTheme` に `.cm-panels` / `.cm-panel.cm-search` / `.cm-button` のスタイルを追加
+- ボタンの `background-image: linear-gradient(...)` を `none` で潰して `backgroundColor` を反映
+
+#### 2. CSV モードのアクティブ列ハイライト色変更
+- 背景色 `#e8f4fd`（薄青）→ `#d4edda`（薄緑）、文字色を黒に
+
+#### 3. CSV モードの列幅ビジュアルパディング
+- 各列の最長セル幅に合わせて行末に `WidgetType` デコレーションでスペースを挿入
+- East Asian Width 判定で全角文字を幅2として計算（CJK統合漢字、ひらがな、カタカナ、ハングル、全角記号、CJK拡張B〜F対応）
+- ファイル本体は無変更、表示のみ整列
+- 20,000行超のドキュメントではパディングをスキップ（性能ガード）
+
+#### 4. CSV モード時の折り返し強制無効化
+- `delimiter` + 拡張子 `.csv`/`.tsv`/`.tab` の組み合わせなら `wrapMode` 設定を無視して折り返し OFF
+- 列の視覚的整列を保つため
+
+#### 5. ダークモード対応の完全撤去
+- **動機**: ユーザはダークモードを使用しないため、将来修正時の検証コスト削減
+- CodeMirror レベル: `oneDark` / `darkThemeOverrides` / `useMediaDark` フック / `isDark` 引数を削除
+- UI レベル: 10個のCSSファイルから `@media (prefers-color-scheme: dark)` ブロックを全削除
+- `@codemirror/theme-one-dark` パッケージをアンインストール
+- **副次効果**: CSS バンドル 22.11KB → 16.89KB（約24%減）、JS バンドル 837KB → 830KB
+
+#### 6. トラブルシュート
+- **問題**: `EditorView.theme()` に `&light` / `&dark` セレクタを渡すと `RangeError: Unsupported selector` でクラッシュ（画面が真っ白）
+- **原因**: `&light` / `&dark` は `EditorView.baseTheme()` 専用。`theme()` では未サポート
+- **対処**: `baseTheme` に戻して対応
+
+### 変更ファイル一覧
+- `src/components/Editor/extensions/theme.ts` — 検索パネルのスタイル追加、ダーク対応削除
+- `src/components/Editor/extensions/csvHighlight.ts` — 列ハイライト色変更、列幅パディングの StateField 追加
+- `src/components/Editor/Editor.tsx` — CSV モード時の折り返し無効化、ダーク対応削除
+- `src/components/InvisibleInspector/InspectorPreview.tsx` — ダーク対応削除
+- `src/App.css` 他 9 件の CSS — `@media (prefers-color-scheme: dark)` ブロック削除
+- `package.json` / `package-lock.json` — `@codemirror/theme-one-dark` 削除
+- `README.md` — ダーク記述削除、CSV 機能追記
+
 ## 2026-03-08 セッション
 
 ### 実施内容

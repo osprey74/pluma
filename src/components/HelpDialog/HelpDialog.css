@@ -26,14 +26,6 @@
   color: #333;
 }
 
-@media (prefers-color-scheme: dark) {
-  .help-dialog {
-    background: #2d2d2d;
-    border-color: #454545;
-    color: #ccc;
-  }
-}
-
 .help-header {
   display: flex;
   align-items: center;
@@ -43,12 +35,6 @@
   font-weight: 600;
   border-bottom: 1px solid #e0e0e0;
   flex-shrink: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .help-header {
-    border-bottom-color: #454545;
-  }
 }
 
 .help-body {
@@ -94,14 +80,6 @@
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
 }
 
-@media (prefers-color-scheme: dark) {
-  .help-kbd {
-    background: #3a3a3a;
-    border-color: #555;
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
-  }
-}
-
 .help-desc {
   flex: 1;
 }
@@ -112,12 +90,6 @@
   padding: 12px 20px 16px;
   border-top: 1px solid #e0e0e0;
   flex-shrink: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .help-footer {
-    border-top-color: #454545;
-  }
 }
 
 .help-btn {
@@ -133,15 +105,4 @@
 
 .help-btn:hover {
   background: #e8e8e8;
-}
-
-@media (prefers-color-scheme: dark) {
-  .help-btn {
-    background: #3a3a3a;
-    border-color: #555;
-  }
-
-  .help-btn:hover {
-    background: #454545;
-  }
 }
