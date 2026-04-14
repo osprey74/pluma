@@ -87,6 +87,8 @@ function App() {
   const [activeTabId, setActiveTabId] = useState<number>(tabs[0].id);
   const tabsRef = useRef(tabs);
   tabsRef.current = tabs;
+  const activeTabIdRef = useRef(activeTabId);
+  activeTabIdRef.current = activeTabId;
   const switchToTabRef = useRef<(tabId: number) => void>(() => {});
   const [editorKey, setEditorKey] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -97,7 +99,7 @@ function App() {
     pendingActionRef.current = action;
     _setPendingAction(action);
   }, []);
-  const { openFile, openFileByPath, saveFile, reloadWithEncoding } = useFileIO();
+  const { openFile, openFileByPath, saveFile, saveFileAs, reloadWithEncoding } = useFileIO();
   const store = useEditorStore();
   const {
     filePath,
@@ -298,10 +300,31 @@ function App() {
           ),
         );
       }
+      requestAnimationFrame(() => editorRef.current?.getView()?.focus());
     } catch (err) {
       console.error("Failed to save file:", err);
     }
   }, [saveFile, activeTabId]);
+
+  const doSaveAs = useCallback(async () => {
+    const text = editorRef.current?.getContent() ?? "";
+    try {
+      const saved = await saveFileAs(text);
+      if (saved) {
+        const s = useEditorStore.getState();
+        setTabs((prev) =>
+          prev.map((t) =>
+            t.id === activeTabId
+              ? { ...t, content: text, isModified: false, filePath: s.filePath, encoding: s.encoding, hasBom: s.hasBom, lineEnding: s.lineEnding, fileSize: s.fileSize }
+              : t,
+          ),
+        );
+      }
+      requestAnimationFrame(() => editorRef.current?.getView()?.focus());
+    } catch (err) {
+      console.error("Failed to save file as:", err);
+    }
+  }, [saveFileAs, activeTabId]);
 
   // --- Execute a pending action ---
 
@@ -674,7 +697,10 @@ function App() {
         e.preventDefault();
         handleOpen();
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "S") {
+        e.preventDefault();
+        doSaveAs();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         doSave();
       }
@@ -713,7 +739,7 @@ function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleNew, handleOpen, doSave, handlePrint, handleCloseTab, activeTabId, handleFontSizeIncrease, handleFontSizeDecrease, handleFontSizeReset, handleToggleInspector, handleToggleMdPreview]);
+  }, [handleNew, handleOpen, doSave, doSaveAs, handlePrint, handleCloseTab, activeTabId, handleFontSizeIncrease, handleFontSizeDecrease, handleFontSizeReset, handleToggleInspector, handleToggleMdPreview]);
 
   // --- Open files passed via CLI args (file association) ---
 
@@ -796,7 +822,14 @@ function App() {
             }
             const result = await openFileByPath(path);
             if (result) {
-              syncCurrentTabContent();
+              // Save current editor text to active tab (keep metadata unchanged)
+              const curText = editorRef.current?.getContent();
+              const curId = activeTabIdRef.current;
+              if (curText !== undefined) {
+                setTabs((prev) =>
+                  prev.map((t) => t.id === curId ? { ...t, content: curText } : t),
+                );
+              }
               const s = useEditorStore.getState();
               const tab = createTab({
                 content: result.text,
@@ -873,6 +906,12 @@ function App() {
             shortcut: "Ctrl+S",
             action: doSave,
             disabled: !isModified,
+          },
+          {
+            label: "名前を付けて保存",
+            icon: "save_as",
+            shortcut: "Ctrl+Shift+S",
+            action: doSaveAs,
           },
           {
             label: "タブを閉じる",
@@ -1053,7 +1092,7 @@ function App() {
       { icon: "keyboard", title: "キーバインド一覧 (F1)", action: () => setHelpOpen(true), colorClass: "tc-gray" },
     ],
     [
-      handleNew, handleOpen, doSave, handlePrint, hasContent, isModified, readOnly,
+      handleNew, handleOpen, doSave, doSaveAs, handlePrint, hasContent, isModified, readOnly,
       handleUndo, handleRedo, handleFind,
       handleFontSizeIncrease, handleFontSizeDecrease, handleFontSizeReset,
       wrapMode, setWrapMode, inspectorActive, handleToggleInspector,

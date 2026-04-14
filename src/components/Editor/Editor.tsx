@@ -43,6 +43,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
     } = useEditorStore();
 
     const contentRef = useRef(initialContent);
+    const savedSelectionRef = useRef<{ anchor: number; head: number } | null>(null);
 
     useImperativeHandle(ref, () => ({
       getContent: () => viewRef.current?.state.doc.toString() ?? "",
@@ -194,7 +195,23 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
 
       viewRef.current = view;
 
+      // Restore cursor position after editor re-creation
+      if (savedSelectionRef.current) {
+        const { anchor, head } = savedSelectionRef.current;
+        const docLen = view.state.doc.length;
+        view.dispatch({
+          selection: { anchor: Math.min(anchor, docLen), head: Math.min(head, docLen) },
+          scrollIntoView: true,
+        });
+        savedSelectionRef.current = null;
+      }
+
       return () => {
+        // Save cursor position before destroying
+        if (viewRef.current) {
+          const sel = viewRef.current.state.selection.main;
+          savedSelectionRef.current = { anchor: sel.anchor, head: sel.head };
+        }
         view.destroy();
         viewRef.current = null;
       };

@@ -1,6 +1,6 @@
 [package]
 name = "pluma"
-version = "1.0.5"
+version = "1.0.6"
 description = "Pluma - A modern text editor for Windows"
 authors = ["osprey74"]
 edition = "2021"

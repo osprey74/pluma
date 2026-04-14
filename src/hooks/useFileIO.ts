@@ -133,6 +133,30 @@ export function useFileIO() {
     return true;
   };
 
+  const saveFileAs = async (content: string): Promise<boolean> => {
+    const selected = await save({ filters: FILE_FILTERS });
+    if (!selected) return false;
+
+    await invoke("write_file", {
+      path: selected,
+      content,
+      encodingName: store.encoding,
+      hasBom: store.hasBom,
+      lineEnding: store.lineEnding,
+    });
+
+    store.setFileInfo({
+      filePath: selected,
+      encoding: store.encoding,
+      hasBom: store.hasBom,
+      lineEnding: store.lineEnding,
+      fileSize: new Blob([content]).size,
+    });
+    store.setIsModified(false);
+    addRecentFile(selected);
+    return true;
+  };
+
   const reloadWithEncoding = async (
     encodingName: string,
   ): Promise<string | null> => {
@@ -147,7 +171,7 @@ export function useFileIO() {
     return result.text;
   };
 
-  return { openFile, openFileByPath, saveFile, reloadWithEncoding };
+  return { openFile, openFileByPath, saveFile, saveFileAs, reloadWithEncoding };
 }
 
 function isCsvLike(ext: string | undefined): boolean {
