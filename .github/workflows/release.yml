@@ -40,7 +40,6 @@ jobs:
           draft: true
           generate_release_notes: false
           files: |
-            src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*-setup.exe
 
   build-macos:

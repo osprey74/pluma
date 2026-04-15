@@ -1,5 +1,40 @@
 # Pluma 作業ログ
 
+## 2026-04-16 セッション
+
+### 実施内容
+
+#### 1. エクスプローラー右クリックメニュー「Plumaで編集」追加
+
+- **動機**: 関連付けに頼らずワンクリックで Pluma に渡せる導線を Windows ユーザに提供
+- **方式**: Tauri v2 NSIS インストーラーフック (`bundle.windows.nsis.installerHooks`) で
+  `HKCU\Software\Classes\SystemFileAssociations\<.ext>\shell\OpenWithPluma` にレジストリ登録
+  - HKCU スコープ → Tauri NSIS のデフォルト per-user install と整合、管理者権限不要
+  - `SystemFileAssociations` を使うことで既存の ProgID を奪わず共存
+  - 起動コマンド: `"$INSTDIR\pluma.exe" "%1"`（CLI 引数経由で既存の `get_cli_file_args` が拾う）
+  - インストール時に追加、アンインストール時に削除
+- **対象拡張子**: `.txt / .csv / .tsv / .tab / .md / .htm / .html`（HTML はソース閲覧・編集用途で追加）
+- **メニュー表記**: 「Plumaで編集」固定（日本語のみ、ローカライズなし）
+
+#### 2. MSI 配布の停止
+
+- **動機**: WiX には NSIS のような名前付きフック機構がなく、右クリックメニュー登録の保守コストが高い
+- `tauri.conf.json` の `bundle.targets` を `"all"` から `["nsis", "dmg", "app"]` に変更
+- `release.yml` の artifact から `*.msi` 行を削除（NSIS `-setup.exe` のみ配布）
+
+### 変更ファイル一覧
+- `src-tauri/installer.nsh` — 新規（NSIS POSTINSTALL/PREUNINSTALL フック）
+- `src-tauri/tauri.conf.json` — `bundle.targets` 変更、`bundle.windows.nsis.installerHooks` 追加
+- `.github/workflows/release.yml` — MSI artifact 行を削除
+- `README.md` — ファイル関連付け節に右クリックメニューを追記
+- `docs/ja/guide/index.md` / `docs/en/guide/index.md` — ファイルを開く方法を 4 通りに更新
+
+### 動作検証 TODO（次回ローカルで実施）
+- `npm run tauri build` で `-setup.exe` を生成しローカルにインストール
+- エクスプローラーで対象 5 拡張子のファイルを右クリック → 「Plumaで編集」表示・起動を確認
+- 非対象拡張子（例: `.png`）には表示されないことを確認
+- アンインストール → メニューが消えることを確認
+
 ## 2026-04-13 セッション
 
 ### 実施内容

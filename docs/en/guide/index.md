@@ -91,11 +91,12 @@ Pluma's UI consists of the following elements, from top to bottom:
 
 ### Open File
 
-Three methods:
+Four methods:
 
 1. **Ctrl+O** → select file in the file dialog
 2. **Drag & drop** — drag a file onto the window
 3. **File association** — double-click a file in Windows Explorer or Finder (requires setup)
+4. **Right-click menu (Windows)** — right-click a `.txt / .csv / .tsv / .tab / .md / .htm / .html` file in Explorer and choose "Plumaで編集" (registered automatically by the installer)
 
 When a file is opened, the **encoding and line ending are automatically detected**.
 
