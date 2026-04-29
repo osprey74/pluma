@@ -25,6 +25,7 @@ export default function StatusBar({
     lineEnding,
     cursorLine,
     cursorCol,
+    selectionLength,
     fileSize,
     isModified,
     filePath,
@@ -35,6 +36,7 @@ export default function StatusBar({
       lineEnding: s.lineEnding,
       cursorLine: s.cursorLine,
       cursorCol: s.cursorCol,
+      selectionLength: s.selectionLength,
       fileSize: s.fileSize,
       isModified: s.isModified,
       filePath: s.filePath,
@@ -80,6 +82,10 @@ export default function StatusBar({
         <span className="status-item">
           Ln {cursorLine}, Col {cursorCol}
         </span>
+
+        {selectionLength > 0 && (
+          <span className="status-item">文字数：{selectionLength}文字</span>
+        )}
 
         {fileSize > 0 && (
           <span className="status-item">{formatFileSize(fileSize)}</span>

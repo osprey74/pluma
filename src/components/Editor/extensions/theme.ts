@@ -13,10 +13,10 @@ const lightTheme = EditorView.theme({
     borderLeftWidth: "1px",
   },
   "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
-    background: "#3390ff44",
+    background: "#d4edda",
   },
   "& .cm-selectionBackground": {
-    background: "#3390ff30",
+    background: "#d4edda",
   },
   ".cm-gutters": {
     backgroundColor: "#f5f5f5",

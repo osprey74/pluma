@@ -78,6 +78,7 @@ Pluma's UI consists of the following elements, from top to bottom:
 | **Encoding** | Dropdown selector (UTF-8, Shift_JIS, etc.) |
 | **Line ending** | Dropdown selector (LF / CRLF / CR) |
 | **Cursor position** | `Ln X, Col Y` (line, column) |
+| **Character count** | Shown only while text is selected: `文字数：N 文字` (half/full-width chars and newlines each count as 1) |
 | **File size** | In KB or MB |
 
 ---
@@ -276,7 +277,11 @@ Pluma automatically detects **comma / tab / semicolon** delimiters based on the 
 
 ### Column Highlighting
 
-The **entire column** of the currently-editing cell is highlighted, making table structure easier to read.
+A **1 px green vertical line** is drawn at the left edge of the currently-active column, making it easy to tell which column you are editing without conflicting with the text-selection background. The line stays continuous across rows — including empty cells and inter-line gaps.
+
+### Character Counter
+
+While a selection is active, the status bar shows **"文字数：N 文字"** on the right. Half-width, full-width, and newline characters are each counted as one character; multi-cursor and rectangular selections sum across all ranges.
 
 ---
 

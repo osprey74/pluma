@@ -61,6 +61,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
 
     // Setters are stable — read once from the store.
     const setCursorPosition = useEditorStore((s) => s.setCursorPosition);
+    const setSelectionLength = useEditorStore((s) => s.setSelectionLength);
     const setIsModified = useEditorStore((s) => s.setIsModified);
 
     // Keep the latest onDocChange in a ref so the editor (created once)
@@ -139,6 +140,8 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
       if (!containerRef.current) return;
 
       const ext = getFileExtension();
+      const isCsvMode =
+        !!delimiter && (ext === "csv" || ext === "tsv" || ext === "tab");
       const extensions: Extension[] = [
         indentUnit.of("\t"),
         lineNumbers(),
@@ -194,10 +197,21 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
         styleCompRef.current.of(buildStyleExt()),
         wrapCompRef.current.of(buildWrapExt()),
         EditorView.updateListener.of((update) => {
-          if (update.selectionSet) {
+          if (update.selectionSet || update.docChanged) {
             const pos = update.state.selection.main.head;
             const line = update.state.doc.lineAt(pos);
             setCursorPosition(line.number, pos - line.from + 1);
+
+            // Count selected characters by Unicode code point so a kanji and
+            // an ASCII letter both count as 1, and a newline counts as 1.
+            let selLen = 0;
+            for (const range of update.state.selection.ranges) {
+              if (!range.empty) {
+                const text = update.state.doc.sliceString(range.from, range.to);
+                selLen += [...text].length;
+              }
+            }
+            setSelectionLength(selLen);
           }
           if (update.docChanged) {
             setIsModified(true);
@@ -214,7 +228,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
         extensions.push(markdown());
       }
 
-      if (delimiter && (ext === "csv" || ext === "tsv" || ext === "tab")) {
+      if (isCsvMode) {
         extensions.push(csvKeymap(delimiter));
         extensions.push(csvColumnHighlight(delimiter));
       }

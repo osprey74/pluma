@@ -1,12 +1,14 @@
-import { EditorState, RangeSetBuilder, StateField } from "@codemirror/state";
-import { Decoration, DecorationSet, EditorView, WidgetType } from "@codemirror/view";
-
-const columnMark = Decoration.mark({ class: "cm-csv-column-active" });
+import { EditorSelection, EditorState, RangeSetBuilder, StateField } from "@codemirror/state";
+import { Decoration, DecorationSet, EditorView, RectangleMarker, WidgetType, layer } from "@codemirror/view";
 
 const columnHighlightTheme = EditorView.baseTheme({
-  ".cm-csv-column-active": {
-    backgroundColor: "#d4edda",
-    color: "#000",
+  // Render the layer above the text so the 1px left border stays continuous
+  // across line gaps. pointer-events:none keeps text selectable through it.
+  ".cm-csv-column-layer": {
+    pointerEvents: "none",
+  },
+  ".cm-csv-column-layer .cm-csv-column-active": {
+    backgroundColor: "#16a34a",
   },
   ".cm-csv-pad": {
     display: "inline-block",
@@ -59,6 +61,10 @@ class PadWidget extends WidgetType {
     const span = document.createElement("span");
     span.className = "cm-csv-pad";
     span.style.width = `${this.count}ch`;
+    // Zero-width space gives the inline-block proper baseline and line-height
+    // so the caret rendered at the widget boundary keeps line-height (without
+    // text content the box collapses to 0 and the caret becomes invisible).
+    span.textContent = "​";
     span.setAttribute("aria-hidden", "true");
     return span;
   }
@@ -75,17 +81,23 @@ function getColumnIndex(lineText: string, cursorCol: number, delimiter: string):
   return col;
 }
 
-function buildColumnDecorations(
-  state: EditorState,
-  delimiter: string,
-): DecorationSet {
-  const builder = new RangeSetBuilder<Decoration>();
+// Build 1px-wide vertical line markers at the active column's left edge for
+// every visible row. Each marker is intentionally extended by 1px above and
+// below the cell so adjacent rows overlap and the left line stays continuous
+// across the inter-line gap that RectangleMarker.forRange leaves behind.
+function buildColumnMarkers(view: EditorView, delimiter: string): readonly RectangleMarker[] {
+  const state = view.state;
   const pos = state.selection.main.head;
   const cursorLine = state.doc.lineAt(pos);
   const cursorCol = pos - cursorLine.from;
   const activeColumn = getColumnIndex(cursorLine.text, cursorCol, delimiter);
 
-  for (let i = 1; i <= state.doc.lines; i++) {
+  const { viewport } = view;
+  const fromLineNum = state.doc.lineAt(viewport.from).number;
+  const toLineNum = state.doc.lineAt(viewport.to).number;
+
+  const markers: RectangleMarker[] = [];
+  for (let i = fromLineNum; i <= toLineNum; i++) {
     const line = state.doc.line(i);
     const parts = line.text.split(delimiter);
     let offset = 0;
@@ -94,15 +106,54 @@ function buildColumnDecorations(
       if (j === activeColumn) {
         const from = line.from + offset;
         const to = from + parts[j].length;
-        if (from < to) {
-          builder.add(from, to, columnMark);
+        // Pass even when from === to: RectangleMarker.forRange returns a
+        // caret-shaped marker for empty ranges, which gives us a vertical
+        // line at the column position so empty cells stay on the border.
+        const base = RectangleMarker.forRange(
+          view,
+          "cm-csv-column-active",
+          EditorSelection.range(from, to),
+        );
+        // For empty cells, RectangleMarker.forRange uses the surrounding
+        // character's (comma) bounding box, which is much shorter than the
+        // line height. Use a larger vertical extension in that case so the
+        // line still bridges into both adjacent rows.
+        const extendY = from === to ? 14 : 3;
+        for (const m of base) {
+          markers.push(
+            new RectangleMarker(
+              "cm-csv-column-active",
+              m.left - 2,
+              m.top - extendY,
+              1,
+              m.height + extendY * 2,
+            ),
+          );
         }
       }
       offset += parts[j].length + 1; // +1 for delimiter
     }
   }
 
-  return builder.finish();
+  return markers;
+}
+
+function columnLayer(delimiter: string) {
+  return layer({
+    // Render below the text/cursor layer so the cursor caret always wins.
+    // drawSelection's cursor layer is above:true; if our layer is also above
+    // and registered after it, the caret can get visually covered by our
+    // marker rectangles (notably at the right edge of single-character cells
+    // where a padding widget sits at the same position).
+    above: false,
+    class: "cm-csv-column-layer",
+    update(update) {
+      return update.docChanged || update.selectionSet || update.viewportChanged;
+    },
+    markers(view) {
+      return buildColumnMarkers(view, delimiter);
+    },
+  });
 }
 
 // Performance guard: skip padding computation for very large docs.
@@ -160,16 +211,7 @@ function buildColumnPadding(
 
 export function csvColumnHighlight(delimiter: string) {
   return [
-    StateField.define<DecorationSet>({
-      create(state) {
-        return buildColumnDecorations(state, delimiter);
-      },
-      update(decorations, tr) {
-        if (!tr.docChanged && !tr.selection) return decorations;
-        return buildColumnDecorations(tr.state, delimiter);
-      },
-      provide: (f) => EditorView.decorations.from(f),
-    }),
+    columnLayer(delimiter),
     StateField.define<DecorationSet>({
       create(state) {
         return buildColumnPadding(state, delimiter);

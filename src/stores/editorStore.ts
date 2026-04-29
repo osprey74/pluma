@@ -55,6 +55,7 @@ export interface EditorStore {
   isModified: boolean;
   cursorLine: number;
   cursorCol: number;
+  selectionLength: number;
   delimiter: "," | "\t" | ";" | null;
   fontFamily: string;
   fontSize: number;
@@ -74,6 +75,7 @@ export interface EditorStore {
   setLineEnding: (lineEnding: string) => void;
   setIsModified: (isModified: boolean) => void;
   setCursorPosition: (line: number, col: number) => void;
+  setSelectionLength: (length: number) => void;
   setDelimiter: (delimiter: "," | "\t" | ";" | null) => void;
   setFontFamily: (fontFamily: string) => void;
   setFontSize: (fontSize: number) => void;
@@ -112,6 +114,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   isModified: false,
   cursorLine: 1,
   cursorCol: 1,
+  selectionLength: 0,
   delimiter: null,
   fontFamily: initial.fontFamily,
   fontSize: initial.fontSize,
@@ -138,6 +141,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   setLineEnding: (lineEnding) => set({ lineEnding }),
   setIsModified: (isModified) => set({ isModified }),
   setCursorPosition: (line, col) => set({ cursorLine: line, cursorCol: col }),
+  setSelectionLength: (selectionLength) => set({ selectionLength }),
   setDelimiter: (delimiter) => set({ delimiter }),
   setFontFamily: (fontFamily) => { set({ fontFamily }); persist(get()); },
   setFontSize: (fontSize) => { set({ fontSize }); persist(get()); },
@@ -159,6 +163,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       isModified: false,
       cursorLine: 1,
       cursorCol: 1,
+      selectionLength: 0,
       delimiter: null,
     }),
 }));
