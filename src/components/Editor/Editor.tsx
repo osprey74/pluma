@@ -1,9 +1,11 @@
 import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, drawSelection, rectangularSelection, crosshairCursor } from "@codemirror/view";
 import { EditorState, Extension, Compartment } from "@codemirror/state";
-import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
+import { defaultKeymap, historyKeymap, history, indentWithTab, insertNewline } from "@codemirror/commands";
+import { indentUnit } from "@codemirror/language";
 import { search, searchKeymap, openSearchPanel, selectNextOccurrence } from "@codemirror/search";
 import { markdown } from "@codemirror/lang-markdown";
+import { useShallow } from "zustand/react/shallow";
 import { getThemeExtension } from "./extensions/theme";
 import { csvKeymap } from "./extensions/csvKeymap";
 import { csvColumnHighlight } from "./extensions/csvHighlight";
@@ -20,18 +22,20 @@ export interface EditorHandle {
 interface EditorProps {
   initialContent?: string;
   readOnly?: boolean;
+  onDocChange?: () => void;
 }
 
 const Editor = forwardRef<EditorHandle, EditorProps>(
-  ({ initialContent = "", readOnly = false }, ref) => {
+  ({ initialContent = "", readOnly = false, onDocChange }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const styleCompRef = useRef(new Compartment());
     const wrapCompRef = useRef(new Compartment());
     const rulerCompRef = useRef(new Compartment());
+    const whitespaceCompRef = useRef(new Compartment());
+
+    // Subscribe selectively to avoid re-rendering on cursor moves.
     const {
-      setCursorPosition,
-      setIsModified,
       delimiter,
       filePath,
       fontFamily,
@@ -40,9 +44,30 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
       editorBgColor,
       wrapMode,
       wrapColumn,
-    } = useEditorStore();
+      showWhitespace,
+    } = useEditorStore(
+      useShallow((s) => ({
+        delimiter: s.delimiter,
+        filePath: s.filePath,
+        fontFamily: s.fontFamily,
+        fontSize: s.fontSize,
+        fontColor: s.fontColor,
+        editorBgColor: s.editorBgColor,
+        wrapMode: s.wrapMode,
+        wrapColumn: s.wrapColumn,
+        showWhitespace: s.showWhitespace,
+      })),
+    );
 
-    const contentRef = useRef(initialContent);
+    // Setters are stable — read once from the store.
+    const setCursorPosition = useEditorStore((s) => s.setCursorPosition);
+    const setIsModified = useEditorStore((s) => s.setIsModified);
+
+    // Keep the latest onDocChange in a ref so the editor (created once)
+    // always calls the current callback without needing to re-create.
+    const onDocChangeRef = useRef(onDocChange);
+    onDocChangeRef.current = onDocChange;
+
     const savedSelectionRef = useRef<{ anchor: number; head: number } | null>(null);
 
     useImperativeHandle(ref, () => ({
@@ -105,12 +130,17 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
       return [];
     }, [wrapMode, wrapColumn, delimiter, getFileExtension]);
 
+    const buildWhitespaceExt = useCallback((): Extension => {
+      return showWhitespace ? whitespaceExtension() : [];
+    }, [showWhitespace]);
+
     // Create editor once (structural deps only)
     useEffect(() => {
       if (!containerRef.current) return;
 
       const ext = getFileExtension();
       const extensions: Extension[] = [
+        indentUnit.of("\t"),
         lineNumbers(),
         highlightActiveLine(),
         highlightActiveLineGutter(),
@@ -146,6 +176,12 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
           },
         }),
         keymap.of([
+          // Override Enter before defaultKeymap so plain text gets a literal
+          // newline. The default insertNewlineAndIndent has "smart" behavior
+          // that strips a whitespace-only line's indent and re-applies it to
+          // the new line — surprising in plain text.
+          { key: "Enter", run: insertNewline },
+          indentWithTab,
           ...defaultKeymap,
           ...historyKeymap,
           ...searchKeymap,
@@ -154,7 +190,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
         ]),
         getThemeExtension(),
         rulerCompRef.current.of(rulerExtension(wrapColumn)),
-        whitespaceExtension(),
+        whitespaceCompRef.current.of(buildWhitespaceExt()),
         styleCompRef.current.of(buildStyleExt()),
         wrapCompRef.current.of(buildWrapExt()),
         EditorView.updateListener.of((update) => {
@@ -164,8 +200,8 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
             setCursorPosition(line.number, pos - line.from + 1);
           }
           if (update.docChanged) {
-            contentRef.current = update.state.doc.toString();
             setIsModified(true);
+            onDocChangeRef.current?.();
           }
         }),
       ];
@@ -184,7 +220,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
       }
 
       const state = EditorState.create({
-        doc: contentRef.current,
+        doc: initialContent,
         extensions,
       });
 
@@ -217,7 +253,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
       };
     }, [delimiter, readOnly, getFileExtension]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Dynamically reconfigure style/wrap/ruler when display settings change
+    // Dynamically reconfigure style/wrap/ruler/whitespace when settings change
     useEffect(() => {
       const view = viewRef.current;
       if (!view) return;
@@ -226,9 +262,10 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
           styleCompRef.current.reconfigure(buildStyleExt()),
           wrapCompRef.current.reconfigure(buildWrapExt()),
           rulerCompRef.current.reconfigure(rulerExtension(wrapColumn)),
+          whitespaceCompRef.current.reconfigure(buildWhitespaceExt()),
         ],
       });
-    }, [fontFamily, fontSize, fontColor, editorBgColor, wrapMode, wrapColumn, buildStyleExt, buildWrapExt]);
+    }, [fontFamily, fontSize, fontColor, editorBgColor, wrapMode, wrapColumn, showWhitespace, buildStyleExt, buildWrapExt, buildWhitespaceExt]);
 
     return <div ref={containerRef} className="editor-container" />;
   },

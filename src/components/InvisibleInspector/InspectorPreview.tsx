@@ -159,7 +159,13 @@ function colorHighlightDecorations(): Extension {
 export function InspectorPreview({ text, fontFamily, fontSize }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const { wrapMode, wrapColumn } = useEditorStore();
+  const wrapMode = useEditorStore((s) => s.wrapMode);
+  const wrapColumn = useEditorStore((s) => s.wrapColumn);
+
+  // Latest text in a ref so the create-effect can read the initial doc
+  // without re-running when text changes.
+  const textRef = useRef(text);
+  textRef.current = text;
 
   const buildStyleExt = useCallback(
     (): Extension =>
@@ -182,7 +188,7 @@ export function InspectorPreview({ text, fontFamily, fontSize }: Props) {
     return [];
   }, [wrapMode, wrapColumn]);
 
-  // Create editor
+  // Create editor once. Text updates flow through dispatch (see effect below).
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -198,7 +204,7 @@ export function InspectorPreview({ text, fontFamily, fontSize }: Props) {
       buildWrapExt(),
     ];
 
-    const state = EditorState.create({ doc: text, extensions });
+    const state = EditorState.create({ doc: textRef.current, extensions });
     const view = new EditorView({ state, parent: containerRef.current });
     viewRef.current = view;
 
@@ -206,7 +212,19 @@ export function InspectorPreview({ text, fontFamily, fontSize }: Props) {
       view.destroy();
       viewRef.current = null;
     };
-  }, [text, wrapColumn, buildStyleExt, buildWrapExt]);
+  }, [wrapColumn, buildStyleExt, buildWrapExt]);
+
+  // Update doc when text changes — dispatch a replace instead of rebuilding
+  // the editor, which would otherwise discard scroll position and re-run all
+  // view plugins on every keystroke upstream.
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    if (view.state.doc.toString() === text) return;
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: text },
+    });
+  }, [text]);
 
   return <div ref={containerRef} className="preview-fullscreen" />;
 }

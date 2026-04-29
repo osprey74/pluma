@@ -12,6 +12,7 @@ interface PersistedSettings {
   wrapMode: WrapMode;
   wrapColumn: number;
   showInspector: boolean;
+  showWhitespace: boolean;
   inspectorWidth: number;
   mdPreviewWidth: number;
 }
@@ -24,6 +25,7 @@ const DEFAULT_SETTINGS: PersistedSettings = {
   wrapMode: "none",
   wrapColumn: 80,
   showInspector: false,
+  showWhitespace: true,
   inspectorWidth: 340,
   mdPreviewWidth: 500,
 };
@@ -80,9 +82,11 @@ export interface EditorStore {
   setWrapMode: (wrapMode: WrapMode) => void;
   setWrapColumn: (wrapColumn: number) => void;
   showInspector: boolean;
+  showWhitespace: boolean;
   inspectorWidth: number;
   mdPreviewWidth: number;
   setShowInspector: (show: boolean) => void;
+  setShowWhitespace: (show: boolean) => void;
   setInspectorWidth: (width: number) => void;
   setMdPreviewWidth: (width: number) => void;
   reset: () => void;
@@ -94,8 +98,8 @@ function persist(s: EditorStore) {
   saveSettings({
     fontFamily: s.fontFamily, fontSize: s.fontSize, fontColor: s.fontColor,
     editorBgColor: s.editorBgColor, wrapMode: s.wrapMode, wrapColumn: s.wrapColumn,
-    showInspector: s.showInspector, inspectorWidth: s.inspectorWidth,
-    mdPreviewWidth: s.mdPreviewWidth,
+    showInspector: s.showInspector, showWhitespace: s.showWhitespace,
+    inspectorWidth: s.inspectorWidth, mdPreviewWidth: s.mdPreviewWidth,
   });
 }
 
@@ -116,6 +120,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   wrapMode: initial.wrapMode,
   wrapColumn: initial.wrapColumn,
   showInspector: initial.showInspector,
+  showWhitespace: initial.showWhitespace,
   inspectorWidth: initial.inspectorWidth,
   mdPreviewWidth: initial.mdPreviewWidth,
 
@@ -141,6 +146,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   setWrapMode: (wrapMode) => { set({ wrapMode }); persist(get()); },
   setWrapColumn: (wrapColumn) => { set({ wrapColumn }); persist(get()); },
   setShowInspector: (showInspector) => { set({ showInspector }); persist(get()); },
+  setShowWhitespace: (showWhitespace) => { set({ showWhitespace }); persist(get()); },
   setInspectorWidth: (inspectorWidth) => { set({ inspectorWidth }); persist(get()); },
   setMdPreviewWidth: (mdPreviewWidth) => { set({ mdPreviewWidth }); persist(get()); },
   reset: () =>

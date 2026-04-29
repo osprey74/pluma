@@ -85,17 +85,7 @@ export function classifyCodePoint(cp: number): CharType {
   return "visible";
 }
 
-export interface AnalyzedChar {
-  char: string;
-  cp: number;
-  index: number;
-  type: CharType;
-  hex: string;
-  info?: CharInfo;
-}
-
 export interface InspectorResult {
-  chars: AnalyzedChar[];
   totalCount: number;
   visibleCount: number;
   invisibleCount: number;
@@ -119,40 +109,39 @@ export const ALL_INVISIBLE_TYPES: { hex: string; info: CharInfo }[] = [
 ];
 
 export function analyzeText(text: string): InspectorResult {
-  const units = Array.from(text);
-  const chars: AnalyzedChar[] = units.map((char, index) => {
-    const cp = char.codePointAt(0)!;
-    const type = classifyCodePoint(cp);
-    const hex = `U+${cp.toString(16).toUpperCase().padStart(4, "0")}`;
-    return {
-      char,
-      cp,
-      index,
-      type,
-      hex,
-      info: type === "invisible" ? getCharInfo(cp) : undefined,
-    };
-  });
-
-  const invisibleItems = chars.filter((c) => c.type === "invisible");
   const invisibleByType: InspectorResult["invisibleByType"] = {};
-  invisibleItems.forEach(({ hex, info, index }) => {
-    if (!invisibleByType[hex])
-      invisibleByType[hex] = { info: info!, hex, positions: [] };
-    invisibleByType[hex].positions.push(index);
-  });
+  const cleanParts: string[] = [];
+  let totalCount = 0;
+  let invisibleCount = 0;
+  let index = 0;
 
-  const cleanText = chars
-    .filter((c) => c.type !== "invisible")
-    .map((c) => c.char)
-    .join("");
+  // Single pass: iterate by code point (handles surrogate pairs) without
+  // allocating a per-character object array. Avoids Array.from + .map +
+  // .filter chains that are O(n) each and produce ~5x intermediate objects.
+  for (const ch of text) {
+    const cp = ch.codePointAt(0)!;
+    const type = classifyCodePoint(cp);
+    totalCount++;
+    if (type === "invisible") {
+      invisibleCount++;
+      const hex = `U+${cp.toString(16).toUpperCase().padStart(4, "0")}`;
+      let bucket = invisibleByType[hex];
+      if (!bucket) {
+        bucket = { info: getCharInfo(cp), hex, positions: [] };
+        invisibleByType[hex] = bucket;
+      }
+      bucket.positions.push(index);
+    } else {
+      cleanParts.push(ch);
+    }
+    index++;
+  }
 
   return {
-    chars,
-    totalCount: chars.length,
-    visibleCount: chars.length - invisibleItems.length,
-    invisibleCount: invisibleItems.length,
+    totalCount,
+    visibleCount: totalCount - invisibleCount,
+    invisibleCount,
     invisibleByType,
-    cleanText,
+    cleanText: cleanParts.join(""),
   };
 }

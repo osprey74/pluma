@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "../../stores/editorStore";
 import "./SettingsDialog.css";
 
@@ -16,16 +17,18 @@ interface SettingsDialogProps {
 }
 
 export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
-  const {
-    fontFamily,
-    fontSize,
-    fontColor,
-    editorBgColor,
-    setFontFamily,
-    setFontSize,
-    setFontColor,
-    setEditorBgColor,
-  } = useEditorStore();
+  const { fontFamily, fontSize, fontColor, editorBgColor } = useEditorStore(
+    useShallow((s) => ({
+      fontFamily: s.fontFamily,
+      fontSize: s.fontSize,
+      fontColor: s.fontColor,
+      editorBgColor: s.editorBgColor,
+    })),
+  );
+  const setFontFamily = useEditorStore((s) => s.setFontFamily);
+  const setFontSize = useEditorStore((s) => s.setFontSize);
+  const setFontColor = useEditorStore((s) => s.setFontColor);
+  const setEditorBgColor = useEditorStore((s) => s.setEditorBgColor);
 
   const [localFontFamily, setLocalFontFamily] = useState(fontFamily);
   const [localFontSize, setLocalFontSize] = useState(fontSize);
@@ -94,8 +97,11 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
         <div className="settings-body">
           <div className="settings-group">
-            <label className="settings-label">フォント</label>
+            <label className="settings-label" htmlFor="settings-font-family">
+              フォント
+            </label>
             <select
+              id="settings-font-family"
               className="settings-select"
               value={localFontFamily}
               onChange={(e) => setLocalFontFamily(e.target.value)}
@@ -109,9 +115,12 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           </div>
 
           <div className="settings-group">
-            <label className="settings-label">文字サイズ</label>
+            <label className="settings-label" htmlFor="settings-font-size">
+              文字サイズ
+            </label>
             <div className="settings-row">
               <input
+                id="settings-font-size"
                 type="range"
                 min={8}
                 max={40}
@@ -124,8 +133,9 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           </div>
 
           <div className="settings-group">
-            <label className="settings-label">
+            <label className="settings-label" htmlFor="settings-use-font-color">
               <input
+                id="settings-use-font-color"
                 type="checkbox"
                 checked={useFontColor}
                 onChange={(e) => setUseFontColor(e.target.checked)}
@@ -134,6 +144,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             </label>
             <input
               type="color"
+              aria-label="文字色"
               value={localFontColor}
               onChange={(e) => setLocalFontColor(e.target.value)}
               disabled={!useFontColor}
@@ -142,8 +153,9 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           </div>
 
           <div className="settings-group">
-            <label className="settings-label">
+            <label className="settings-label" htmlFor="settings-use-bg-color">
               <input
+                id="settings-use-bg-color"
                 type="checkbox"
                 checked={useBgColor}
                 onChange={(e) => setUseBgColor(e.target.checked)}
@@ -152,6 +164,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             </label>
             <input
               type="color"
+              aria-label="背景色"
               value={localBgColor}
               onChange={(e) => setLocalBgColor(e.target.value)}
               disabled={!useBgColor}
@@ -161,12 +174,14 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
           <div
             className="settings-preview"
-            style={{
-              fontFamily: localFontFamily,
-              fontSize: `${localFontSize}px`,
-              color: useFontColor ? localFontColor : undefined,
-              backgroundColor: useBgColor ? localBgColor : undefined,
-            }}
+            style={
+              {
+                "--preview-font-family": localFontFamily,
+                "--preview-font-size": `${localFontSize}px`,
+                "--preview-color": useFontColor ? localFontColor : "inherit",
+                "--preview-bg": useBgColor ? localBgColor : "transparent",
+              } as React.CSSProperties
+            }
           >
             ABCabc あいう 123 サンプルテキスト
           </div>

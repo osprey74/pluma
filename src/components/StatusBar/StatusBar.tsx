@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "../../stores/editorStore";
 import "./StatusBar.css";
 
@@ -28,7 +29,18 @@ export default function StatusBar({
     isModified,
     filePath,
     hasBom,
-  } = useEditorStore();
+  } = useEditorStore(
+    useShallow((s) => ({
+      encoding: s.encoding,
+      lineEnding: s.lineEnding,
+      cursorLine: s.cursorLine,
+      cursorCol: s.cursorCol,
+      fileSize: s.fileSize,
+      isModified: s.isModified,
+      filePath: s.filePath,
+      hasBom: s.hasBom,
+    })),
+  );
 
   return (
     <div className="status-bar">

@@ -4,6 +4,7 @@ import { openSearchPanel } from "@codemirror/search";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen, TauriEvent } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { useShallow } from "zustand/react/shallow";
 import Editor, { EditorHandle } from "./components/Editor/Editor";
 import MenuBar from "./components/MenuBar/MenuBar";
 import TabBar, { type TabInfo } from "./components/TabBar/TabBar";
@@ -100,24 +101,39 @@ function App() {
     _setPendingAction(action);
   }, []);
   const { openFile, openFileByPath, saveFile, saveFileAs, reloadWithEncoding } = useFileIO();
-  const store = useEditorStore();
+  // Subscribe selectively so cursor moves (which only update cursorLine/Col)
+  // don't re-render this component or rebuild memoized menu/toolbar arrays.
   const {
     filePath,
-    setLineEnding,
     isModified,
     fontFamily,
-    setFontFamily,
     fontSize,
-    setFontSize,
     wrapMode,
-    setWrapMode,
     wrapColumn,
-    setWrapColumn,
     showInspector,
-    setShowInspector,
+    showWhitespace,
     mdPreviewWidth,
-    setMdPreviewWidth,
-  } = store;
+  } = useEditorStore(
+    useShallow((s) => ({
+      filePath: s.filePath,
+      isModified: s.isModified,
+      fontFamily: s.fontFamily,
+      fontSize: s.fontSize,
+      wrapMode: s.wrapMode,
+      wrapColumn: s.wrapColumn,
+      showInspector: s.showInspector,
+      showWhitespace: s.showWhitespace,
+      mdPreviewWidth: s.mdPreviewWidth,
+    })),
+  );
+  const setLineEnding = useEditorStore((s) => s.setLineEnding);
+  const setFontFamily = useEditorStore((s) => s.setFontFamily);
+  const setFontSize = useEditorStore((s) => s.setFontSize);
+  const setWrapMode = useEditorStore((s) => s.setWrapMode);
+  const setWrapColumn = useEditorStore((s) => s.setWrapColumn);
+  const setShowInspector = useEditorStore((s) => s.setShowInspector);
+  const setShowWhitespace = useEditorStore((s) => s.setShowWhitespace);
+  const setMdPreviewWidth = useEditorStore((s) => s.setMdPreviewWidth);
 
   const activeTab = useMemo(() => tabs.find((t) => t.id === activeTabId)!, [tabs, activeTabId]);
   const readOnly = activeTab.readOnly;
@@ -133,19 +149,21 @@ function App() {
   const syncCurrentTabContent = useCallback(() => {
     const text = editorRef.current?.getContent();
     if (text === undefined) return;
+    const s = useEditorStore.getState();
     setTabs((prev) =>
       prev.map((t) =>
         t.id === activeTabId
-          ? { ...t, content: text, isModified: store.isModified, filePath: store.filePath, encoding: store.encoding, hasBom: store.hasBom, lineEnding: store.lineEnding, fileSize: store.fileSize, delimiter: store.delimiter }
+          ? { ...t, content: text, isModified: s.isModified, filePath: s.filePath, encoding: s.encoding, hasBom: s.hasBom, lineEnding: s.lineEnding, fileSize: s.fileSize, delimiter: s.delimiter }
           : t,
       ),
     );
-  }, [activeTabId, store]);
+  }, [activeTabId]);
 
   // --- Restore tab data into editor store ---
 
   const restoreTabToStore = useCallback((tab: TabData) => {
-    store.setFileInfo({
+    const s = useEditorStore.getState();
+    s.setFileInfo({
       filePath: tab.filePath ?? "",
       encoding: tab.encoding,
       hasBom: tab.hasBom,
@@ -156,9 +174,9 @@ function App() {
       // reset filePath to null (setFileInfo sets it to "")
       useEditorStore.setState({ filePath: null });
     }
-    store.setIsModified(tab.isModified);
-    store.setDelimiter(tab.delimiter);
-  }, [store]);
+    s.setIsModified(tab.isModified);
+    s.setDelimiter(tab.delimiter);
+  }, []);
 
   // --- Tab operations ---
 
@@ -418,10 +436,10 @@ function App() {
     const action = pendingActionRef.current;
     setPendingAction(null);
     // Mark as not modified so the action proceeds
-    store.setIsModified(false);
+    useEditorStore.getState().setIsModified(false);
     setTabs((prev) => prev.map((t) => t.id === activeTabId ? { ...t, isModified: false } : t));
     await executePendingAction(action);
-  }, [executePendingAction, setPendingAction, store, activeTabId]);
+  }, [executePendingAction, setPendingAction, activeTabId]);
 
   const handleConfirmCancel = useCallback(() => {
     setPendingAction(null);
@@ -594,13 +612,11 @@ function App() {
     setPrintContent(null);
   }, [mdPreview]);
 
+  // Seed preview text on toggle/editor remount; updates after this point
+  // are pushed by the Editor's onDocChange callback (debounced).
   useEffect(() => {
     if (!mdPreview) return;
     setMdPreviewText(editorRef.current?.getContent() ?? "");
-    const interval = setInterval(() => {
-      setMdPreviewText(editorRef.current?.getContent() ?? "");
-    }, 500);
-    return () => clearInterval(interval);
   }, [mdPreview, editorKey]);
 
   useEffect(() => {
@@ -1026,6 +1042,12 @@ function App() {
             dividerAfter: true,
           },
           {
+            label: "空白文字を表示",
+            icon: "space_bar",
+            action: () => setShowWhitespace(!showWhitespace),
+            checked: showWhitespace,
+          },
+          {
             label: "不可視文字インスペクター",
             icon: "visibility",
             shortcut: "Ctrl+Shift+I",
@@ -1062,8 +1084,8 @@ function App() {
       handleFontSizeIncrease, handleFontSizeDecrease, handleFontSizeReset,
       handleWrapColumnChange, handleToggleInspector, handleToggleMdPreview,
       isModified, readOnly, fontFamily, fontSize, wrapMode, wrapColumn,
-      showInspector, mdPreview, isMarkdownFile, activeTabId,
-      setFontFamily, setWrapMode,
+      showInspector, showWhitespace, mdPreview, isMarkdownFile, activeTabId,
+      setFontFamily, setWrapMode, setShowWhitespace,
     ],
   );
 
@@ -1102,14 +1124,39 @@ function App() {
 
   const [inspectorText, setInspectorText] = useState("");
 
+  // Seed inspector text on toggle/editor remount; subsequent updates are
+  // pushed by Editor's onDocChange callback (debounced) — no polling.
   useEffect(() => {
     if (!inspectorActive || inspectorMode === "preview") return;
     setInspectorText(getEditorText());
-    const interval = setInterval(() => {
-      setInspectorText(getEditorText());
-    }, 500);
-    return () => clearInterval(interval);
   }, [inspectorActive, inspectorMode, getEditorText, editorKey]);
+
+  // Debounced doc-change handler. The Editor fires this on every keystroke;
+  // we coalesce bursts and only re-read full doc text when downstream
+  // (inspector / md preview) is actually visible.
+  const docChangeTimerRef = useRef<number | null>(null);
+  const handleEditorDocChange = useCallback(() => {
+    if (docChangeTimerRef.current !== null) {
+      window.clearTimeout(docChangeTimerRef.current);
+    }
+    docChangeTimerRef.current = window.setTimeout(() => {
+      docChangeTimerRef.current = null;
+      const needInspector = inspectorActive && inspectorMode !== "preview";
+      const needPreview = mdPreview;
+      if (!needInspector && !needPreview) return;
+      const text = editorRef.current?.getContent() ?? "";
+      if (needInspector) setInspectorText(text);
+      if (needPreview) setMdPreviewText(text);
+    }, 250);
+  }, [inspectorActive, inspectorMode, mdPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (docChangeTimerRef.current !== null) {
+        window.clearTimeout(docChangeTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className={`app${printContent ? " printing" : ""}`}>
@@ -1134,6 +1181,7 @@ function App() {
             ref={editorRef}
             initialContent={activeTab.content}
             readOnly={readOnly}
+            onDocChange={handleEditorDocChange}
           />
           {mdPreview && (
             <MarkdownPreview

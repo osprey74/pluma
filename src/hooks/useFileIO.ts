@@ -45,37 +45,17 @@ function addRecentFile(filePath: string) {
   localStorage.setItem(RECENT_FILES_KEY, JSON.stringify(recent));
 }
 
-export function useFileIO() {
-  const store = useEditorStore();
+// All operations are async / user-initiated, so they read the latest store
+// state via getState() and never subscribe. Subscribing here would force the
+// component using this hook to re-render on every store change (including
+// cursor moves), invalidating its memoization chain.
+async function openFileByPath(
+  path: string,
+): Promise<{ text: string; readOnly: boolean } | null> {
+  const fileSize = await invoke<number>("get_file_size", { path });
+  const store = useEditorStore.getState();
 
-  const openFileByPath = async (
-    path: string,
-  ): Promise<{ text: string; readOnly: boolean } | null> => {
-    const fileSize = await invoke<number>("get_file_size", { path });
-
-    if (fileSize > FILE_SIZE_READONLY) {
-      const result = await invoke<FileContent>("read_file", { path });
-      const ext = path.split(".").pop()?.toLowerCase();
-      const delimiter = isCsvLike(ext) ? detectDelimiter(result.text) : null;
-      store.setFileInfo({
-        filePath: path,
-        encoding: result.encoding,
-        hasBom: result.has_bom,
-        lineEnding: result.line_ending,
-        fileSize: result.file_size,
-      });
-      store.setDelimiter(delimiter);
-      addRecentFile(path);
-      return { text: result.text, readOnly: true };
-    }
-
-    if (fileSize > FILE_SIZE_WARN) {
-      const proceed = window.confirm(
-        `This file is ${formatFileSize(fileSize)}.\nFiles over 50MB may cause some operations to be slow.\n\nContinue?`,
-      );
-      if (!proceed) return null;
-    }
-
+  if (fileSize > FILE_SIZE_READONLY) {
     const result = await invoke<FileContent>("read_file", { path });
     const ext = path.split(".").pop()?.toLowerCase();
     const delimiter = isCsvLike(ext) ? detectDelimiter(result.text) : null;
@@ -88,90 +68,119 @@ export function useFileIO() {
     });
     store.setDelimiter(delimiter);
     addRecentFile(path);
-    return { text: result.text, readOnly: false };
-  };
+    return { text: result.text, readOnly: true };
+  }
 
-  const openFile = async (): Promise<{
-    text: string;
-    readOnly: boolean;
-  } | null> => {
-    const selected = await open({
-      multiple: false,
-      filters: FILE_FILTERS,
-    });
+  if (fileSize > FILE_SIZE_WARN) {
+    const proceed = window.confirm(
+      `This file is ${formatFileSize(fileSize)}.\nFiles over 50MB may cause some operations to be slow.\n\nContinue?`,
+    );
+    if (!proceed) return null;
+  }
 
-    if (!selected) return null;
+  const result = await invoke<FileContent>("read_file", { path });
+  const ext = path.split(".").pop()?.toLowerCase();
+  const delimiter = isCsvLike(ext) ? detectDelimiter(result.text) : null;
+  store.setFileInfo({
+    filePath: path,
+    encoding: result.encoding,
+    hasBom: result.has_bom,
+    lineEnding: result.line_ending,
+    fileSize: result.file_size,
+  });
+  store.setDelimiter(delimiter);
+  addRecentFile(path);
+  return { text: result.text, readOnly: false };
+}
 
-    return openFileByPath(selected as string);
-  };
+async function openFile(): Promise<{
+  text: string;
+  readOnly: boolean;
+} | null> {
+  const selected = await open({
+    multiple: false,
+    filters: FILE_FILTERS,
+  });
 
-  const saveFile = async (content: string): Promise<boolean> => {
-    let path = store.filePath;
+  if (!selected) return null;
 
-    if (!path) {
-      const selected = await save({ filters: FILE_FILTERS });
-      if (!selected) return false;
-      path = selected;
-      store.setFileInfo({
-        filePath: path,
-        encoding: store.encoding,
-        hasBom: store.hasBom,
-        lineEnding: store.lineEnding,
-        fileSize: new Blob([content]).size,
-      });
-    }
+  return openFileByPath(selected as string);
+}
 
-    await invoke("write_file", {
-      path,
-      content,
-      encodingName: store.encoding,
-      hasBom: store.hasBom,
-      lineEnding: store.lineEnding,
-    });
+async function saveFile(content: string): Promise<boolean> {
+  const store = useEditorStore.getState();
+  let path = store.filePath;
 
-    store.setIsModified(false);
-    return true;
-  };
-
-  const saveFileAs = async (content: string): Promise<boolean> => {
+  if (!path) {
     const selected = await save({ filters: FILE_FILTERS });
     if (!selected) return false;
-
-    await invoke("write_file", {
-      path: selected,
-      content,
-      encodingName: store.encoding,
-      hasBom: store.hasBom,
-      lineEnding: store.lineEnding,
-    });
-
+    path = selected;
     store.setFileInfo({
-      filePath: selected,
+      filePath: path,
       encoding: store.encoding,
       hasBom: store.hasBom,
       lineEnding: store.lineEnding,
       fileSize: new Blob([content]).size,
     });
-    store.setIsModified(false);
-    addRecentFile(selected);
-    return true;
-  };
+  }
 
-  const reloadWithEncoding = async (
-    encodingName: string,
-  ): Promise<string | null> => {
-    if (!store.filePath) return null;
+  await invoke("write_file", {
+    path,
+    content,
+    encodingName: store.encoding,
+    hasBom: store.hasBom,
+    lineEnding: store.lineEnding,
+  });
 
-    const result = await invoke<FileContent>("read_file_with_encoding", {
-      path: store.filePath,
-      encodingName,
-    });
+  useEditorStore.getState().setIsModified(false);
+  return true;
+}
 
-    store.setEncoding(result.encoding);
-    return result.text;
-  };
+async function saveFileAs(content: string): Promise<boolean> {
+  const selected = await save({ filters: FILE_FILTERS });
+  if (!selected) return false;
 
-  return { openFile, openFileByPath, saveFile, saveFileAs, reloadWithEncoding };
+  const store = useEditorStore.getState();
+  await invoke("write_file", {
+    path: selected,
+    content,
+    encodingName: store.encoding,
+    hasBom: store.hasBom,
+    lineEnding: store.lineEnding,
+  });
+
+  store.setFileInfo({
+    filePath: selected,
+    encoding: store.encoding,
+    hasBom: store.hasBom,
+    lineEnding: store.lineEnding,
+    fileSize: new Blob([content]).size,
+  });
+  store.setIsModified(false);
+  addRecentFile(selected);
+  return true;
+}
+
+async function reloadWithEncoding(
+  encodingName: string,
+): Promise<string | null> {
+  const store = useEditorStore.getState();
+  if (!store.filePath) return null;
+
+  const result = await invoke<FileContent>("read_file_with_encoding", {
+    path: store.filePath,
+    encodingName,
+  });
+
+  store.setEncoding(result.encoding);
+  return result.text;
+}
+
+// Stable singleton reference — never changes across renders.
+const FILE_IO = { openFile, openFileByPath, saveFile, saveFileAs, reloadWithEncoding };
+
+export function useFileIO() {
+  return FILE_IO;
 }
 
 function isCsvLike(ext: string | undefined): boolean {
