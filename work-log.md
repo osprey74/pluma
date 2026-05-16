@@ -1,5 +1,20 @@
 # Pluma 作業ログ
 
+## 2026-05-16 セッション（v1.1.0）
+
+### 実施内容
+
+#### 1. 「名前を付けて保存」でエディタ表示が空になる不具合の修正
+
+- **症状**: 「名前を付けて保存」を実行すると、タブのファイル名は新しい名前に更新されるが、エディタの表示領域だけが空（または保存前の旧コンテンツ）になる。保存されたファイル自体は正しい内容を持っており、表示のみの異常。
+- **原因**: `Editor.tsx` の view 生成 `useEffect` が `getFileExtension` を依存に持ち、これが `filePath` 依存の `useCallback`。`saveFileAs` が zustand の `filePath` を先に更新するため、まだ `setTabs` で `activeTab.content` がエディタ実コンテンツに同期される前に `useEffect` が再走し、`initialContent` がスタンプ前の古い値（新規タブなら空文字列）で CodeMirror ビューが再生成されていた。
+- **対処**: `App.tsx` の `doSave` / `doSaveAs` 冒頭で、await の前にエディタの現在コンテンツを `setTabs` で active tab に同期。これにより `filePath` 変更でビュー再生成が走るタイミングでも `activeTab.content` が最新となり、新規ビューが正しい内容で初期化される。新規（無題）タブの初回保存でも同じ経路を踏むため、両方のパスで修正。
+
+### 変更ファイル一覧
+- `src/App.tsx` — `doSave` / `doSaveAs` で save 前にタブコンテンツを同期
+
+---
+
 ## 2026-04-16 セッション
 
 ### 実施内容

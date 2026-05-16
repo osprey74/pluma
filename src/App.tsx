@@ -305,6 +305,13 @@ function App() {
 
   const doSave = useCallback(async () => {
     const text = editorRef.current?.getContent() ?? "";
+    // Sync editor content into the tab before saving. For a new (untitled)
+    // tab, saveFile updates filePath in the store, which re-runs the Editor's
+    // view-creation effect and rebuilds the view from `activeTab.content`. If
+    // we don't sync first, that prop is stale and the view rebuilds empty.
+    setTabs((prev) =>
+      prev.map((t) => (t.id === activeTabId ? { ...t, content: text } : t)),
+    );
     try {
       const saved = await saveFile(text);
       if (saved) {
@@ -326,6 +333,13 @@ function App() {
 
   const doSaveAs = useCallback(async () => {
     const text = editorRef.current?.getContent() ?? "";
+    // saveFileAs always updates filePath in the store, which re-runs the
+    // Editor's view-creation effect and rebuilds the view from
+    // `activeTab.content`. Sync the live editor text in first so that prop
+    // isn't stale at the moment the rebuild happens.
+    setTabs((prev) =>
+      prev.map((t) => (t.id === activeTabId ? { ...t, content: text } : t)),
+    );
     try {
       const saved = await saveFileAs(text);
       if (saved) {
