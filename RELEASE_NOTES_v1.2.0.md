@@ -21,6 +21,12 @@
 
 アプリの起動直後や新規ファイル作成後、これまではエディタ領域を一度クリックしないと入力やクリップボードからの貼り付けができませんでした。本バージョンからはエディタ領域へ自動的にカーソルが当たるようになり、起動・新規作成・タブ切り替え・ファイルを開いた直後からそのまま入力・貼り付けが行えます。
 
+## 不具合修正
+
+### 空白タブがファイルを開くとファイル名を引き継ぐ問題を修正
+
+起動直後の空白タブがある状態でファイルを開くと、開いたファイルのタブとは別に、空白タブのタブ名にも開いたファイル名が表示されてしまう不具合を修正しました。タブの中身は空のまま、タブ名だけが実際のファイルと異なる状態になっていました。ファイルを開く際に現在のタブ状態を保存する順序を見直して解消しています。
+
 ---
 
 ## 動作環境
@@ -63,6 +69,12 @@ A "Line height" slider has been added to the Settings dialog. You can adjust lin
 ### Editor auto-focus on launch and new file
 
 Previously you had to click the editor area once before you could type or paste after launching the app or creating a new file. The editor area is now focused automatically, so you can type and paste right away after launch, new-file creation, tab switching, or opening a file.
+
+## Bug Fixes
+
+### Blank tab inheriting the opened file's name
+
+Fixed a bug where, with the initial blank tab present, opening a file caused the blank tab's title to show the opened file's name (in addition to the file's own new tab). The blank tab stayed empty while only its title mismatched the actual file. The fix reorders when the current tab's state is saved during an open operation.
 
 ---
 
