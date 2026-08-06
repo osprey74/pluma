@@ -40,6 +40,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
       filePath,
       fontFamily,
       fontSize,
+      lineHeight,
       fontColor,
       editorBgColor,
       wrapMode,
@@ -51,6 +52,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
         filePath: s.filePath,
         fontFamily: s.fontFamily,
         fontSize: s.fontSize,
+        lineHeight: s.lineHeight,
         fontColor: s.fontColor,
         editorBgColor: s.editorBgColor,
         wrapMode: s.wrapMode,
@@ -103,13 +105,17 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
         ".cm-content": {
           fontFamily,
           fontSize: `${fontSize}px`,
+          lineHeight: `${lineHeight}`,
           ...(fontColor ? { color: fontColor } : {}),
+        },
+        ".cm-line": {
+          lineHeight: `${lineHeight}`,
         },
         ...(editorBgColor
           ? { ".cm-gutters": { backgroundColor: editorBgColor } }
           : {}),
       });
-    }, [fontFamily, fontSize, fontColor, editorBgColor]);
+    }, [fontFamily, fontSize, lineHeight, fontColor, editorBgColor]);
 
     // Build wrap extension from current settings
     const buildWrapExt = useCallback((): Extension => {
@@ -256,6 +262,13 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
         savedSelectionRef.current = null;
       }
 
+      // Focus the editor so the user can type or paste immediately on app
+      // launch, new-file creation, tab switch, etc. — without an extra click.
+      // Guard against remount races: only focus if this view is still current.
+      requestAnimationFrame(() => {
+        if (viewRef.current === view) view.focus();
+      });
+
       return () => {
         // Save cursor position before destroying
         if (viewRef.current) {
@@ -279,7 +292,7 @@ const Editor = forwardRef<EditorHandle, EditorProps>(
           whitespaceCompRef.current.reconfigure(buildWhitespaceExt()),
         ],
       });
-    }, [fontFamily, fontSize, fontColor, editorBgColor, wrapMode, wrapColumn, showWhitespace, buildStyleExt, buildWrapExt, buildWhitespaceExt]);
+    }, [fontFamily, fontSize, lineHeight, fontColor, editorBgColor, wrapMode, wrapColumn, showWhitespace, buildStyleExt, buildWrapExt, buildWhitespaceExt]);
 
     return <div ref={containerRef} className="editor-container" />;
   },

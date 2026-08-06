@@ -7,6 +7,7 @@ const SETTINGS_KEY = "pluma-settings";
 interface PersistedSettings {
   fontFamily: string;
   fontSize: number;
+  lineHeight: number;
   fontColor: string;
   editorBgColor: string;
   wrapMode: WrapMode;
@@ -20,6 +21,7 @@ interface PersistedSettings {
 const DEFAULT_SETTINGS: PersistedSettings = {
   fontFamily: "'Source Han Code JP', monospace",
   fontSize: 14,
+  lineHeight: 1.5,
   fontColor: "",
   editorBgColor: "",
   wrapMode: "none",
@@ -59,6 +61,7 @@ export interface EditorStore {
   delimiter: "," | "\t" | ";" | null;
   fontFamily: string;
   fontSize: number;
+  lineHeight: number;
   fontColor: string;
   editorBgColor: string;
   wrapMode: WrapMode;
@@ -79,6 +82,7 @@ export interface EditorStore {
   setDelimiter: (delimiter: "," | "\t" | ";" | null) => void;
   setFontFamily: (fontFamily: string) => void;
   setFontSize: (fontSize: number) => void;
+  setLineHeight: (lineHeight: number) => void;
   setFontColor: (fontColor: string) => void;
   setEditorBgColor: (editorBgColor: string) => void;
   setWrapMode: (wrapMode: WrapMode) => void;
@@ -98,7 +102,8 @@ const initial = loadSettings();
 
 function persist(s: EditorStore) {
   saveSettings({
-    fontFamily: s.fontFamily, fontSize: s.fontSize, fontColor: s.fontColor,
+    fontFamily: s.fontFamily, fontSize: s.fontSize, lineHeight: s.lineHeight,
+    fontColor: s.fontColor,
     editorBgColor: s.editorBgColor, wrapMode: s.wrapMode, wrapColumn: s.wrapColumn,
     showInspector: s.showInspector, showWhitespace: s.showWhitespace,
     inspectorWidth: s.inspectorWidth, mdPreviewWidth: s.mdPreviewWidth,
@@ -118,6 +123,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   delimiter: null,
   fontFamily: initial.fontFamily,
   fontSize: initial.fontSize,
+  lineHeight: initial.lineHeight,
   fontColor: initial.fontColor,
   editorBgColor: initial.editorBgColor,
   wrapMode: initial.wrapMode,
@@ -145,6 +151,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   setDelimiter: (delimiter) => set({ delimiter }),
   setFontFamily: (fontFamily) => { set({ fontFamily }); persist(get()); },
   setFontSize: (fontSize) => { set({ fontSize }); persist(get()); },
+  setLineHeight: (lineHeight) => { set({ lineHeight }); persist(get()); },
   setFontColor: (fontColor) => { set({ fontColor }); persist(get()); },
   setEditorBgColor: (editorBgColor) => { set({ editorBgColor }); persist(get()); },
   setWrapMode: (wrapMode) => { set({ wrapMode }); persist(get()); },

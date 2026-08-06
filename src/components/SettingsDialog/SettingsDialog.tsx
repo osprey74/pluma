@@ -17,21 +17,24 @@ interface SettingsDialogProps {
 }
 
 export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
-  const { fontFamily, fontSize, fontColor, editorBgColor } = useEditorStore(
+  const { fontFamily, fontSize, lineHeight, fontColor, editorBgColor } = useEditorStore(
     useShallow((s) => ({
       fontFamily: s.fontFamily,
       fontSize: s.fontSize,
+      lineHeight: s.lineHeight,
       fontColor: s.fontColor,
       editorBgColor: s.editorBgColor,
     })),
   );
   const setFontFamily = useEditorStore((s) => s.setFontFamily);
   const setFontSize = useEditorStore((s) => s.setFontSize);
+  const setLineHeight = useEditorStore((s) => s.setLineHeight);
   const setFontColor = useEditorStore((s) => s.setFontColor);
   const setEditorBgColor = useEditorStore((s) => s.setEditorBgColor);
 
   const [localFontFamily, setLocalFontFamily] = useState(fontFamily);
   const [localFontSize, setLocalFontSize] = useState(fontSize);
+  const [localLineHeight, setLocalLineHeight] = useState(lineHeight);
   const [localFontColor, setLocalFontColor] = useState(fontColor || "#333333");
   const [localBgColor, setLocalBgColor] = useState(editorBgColor || "#ffffff");
   const [useFontColor, setUseFontColor] = useState(!!fontColor);
@@ -46,28 +49,32 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     if (open) {
       setLocalFontFamily(fontFamily);
       setLocalFontSize(fontSize);
+      setLocalLineHeight(lineHeight);
       setLocalFontColor(fontColor || "#333333");
       setLocalBgColor(editorBgColor || "#ffffff");
       setUseFontColor(!!fontColor);
       setUseBgColor(!!editorBgColor);
     }
-  }, [open, fontFamily, fontSize, fontColor, editorBgColor]);
+  }, [open, fontFamily, fontSize, lineHeight, fontColor, editorBgColor]);
 
   const handleApply = useCallback(() => {
     setFontFamily(localFontFamily);
     setFontSize(localFontSize);
+    setLineHeight(localLineHeight);
     setFontColor(useFontColor ? localFontColor : "");
     setEditorBgColor(useBgColor ? localBgColor : "");
     onClose();
   }, [
     localFontFamily,
     localFontSize,
+    localLineHeight,
     localFontColor,
     localBgColor,
     useFontColor,
     useBgColor,
     setFontFamily,
     setFontSize,
+    setLineHeight,
     setFontColor,
     setEditorBgColor,
     onClose,
@@ -133,6 +140,25 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           </div>
 
           <div className="settings-group">
+            <label className="settings-label" htmlFor="settings-line-height">
+              行の高さ
+            </label>
+            <div className="settings-row">
+              <input
+                id="settings-line-height"
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={localLineHeight}
+                onChange={(e) => setLocalLineHeight(Number(e.target.value))}
+                className="settings-range"
+              />
+              <span className="settings-value">{localLineHeight.toFixed(1)}</span>
+            </div>
+          </div>
+
+          <div className="settings-group">
             <label className="settings-label" htmlFor="settings-use-font-color">
               <input
                 id="settings-use-font-color"
@@ -178,6 +204,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
               {
                 "--preview-font-family": localFontFamily,
                 "--preview-font-size": `${localFontSize}px`,
+                "--preview-line-height": `${localLineHeight}`,
                 "--preview-color": useFontColor ? localFontColor : "inherit",
                 "--preview-bg": useBgColor ? localBgColor : "transparent",
               } as React.CSSProperties
