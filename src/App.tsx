@@ -180,9 +180,12 @@ function App() {
 
   // --- Tab operations ---
 
-  const switchToTab = useCallback((tabId: number) => {
+  const switchToTab = useCallback((tabId: number, skipSync = false) => {
     if (tabId === activeTabId) return;
-    syncCurrentTabContent();
+    // skipSync is set by callers that have already synced the active tab
+    // BEFORE an open operation clobbered the shared store — re-syncing here
+    // would stamp the just-opened file's metadata onto the active tab.
+    if (!skipSync) syncCurrentTabContent();
     setActiveTabId(tabId);
     setMdPreview(false);
     const tab = tabs.find((t) => t.id === tabId);
@@ -210,17 +213,22 @@ function App() {
 
   const doOpenInNewTab = useCallback(async () => {
     try {
+      // Snapshot the active tab BEFORE opening. openFile() mutates the shared
+      // store's filePath/encoding as a side channel, so syncing afterward would
+      // stamp the newly-opened file's metadata onto the (still-active) tab —
+      // e.g. an empty Untitled tab would wrongly inherit the opened filename.
+      syncCurrentTabContent();
       const result = await openFile();
       if (!result) return;
       // Switch to existing tab if already open
       const s = useEditorStore.getState();
       const existing = tabs.find((t) => t.filePath === s.filePath);
       if (existing) {
-        switchToTab(existing.id);
+        // Already synced above; skip switchToTab's own sync (store is clobbered).
+        switchToTab(existing.id, true);
         setInfoMessage("既に開いているファイルです");
         return;
       }
-      syncCurrentTabContent();
       const tab = createTab({
         content: result.text,
         readOnly: result.readOnly,
@@ -250,9 +258,12 @@ function App() {
           setInfoMessage("既に開いているファイルです");
           return;
         }
+        // Snapshot the active tab BEFORE opening — openFileByPath() clobbers the
+        // shared store's filePath/encoding, so syncing afterward would stamp the
+        // opened file's metadata onto the still-active tab.
+        syncCurrentTabContent();
         const result = await openFileByPath(path);
         if (!result) return;
-        syncCurrentTabContent();
         const s = useEditorStore.getState();
         const tab = createTab({
           content: result.text,
